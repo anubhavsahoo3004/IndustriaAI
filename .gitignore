@@ -1,0 +1,79 @@
+# =========================================================
+# IndustriaAI .gitignore
+# =========================================================
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Python
+backend/venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+
+# Node & Frontend
+frontend/node_modules/
+node_modules/
+frontend/dist/
+dist/
+frontend/dist-ssr/
+*.local
+
+# Database & SQLite files
+*.db
+*.sqlite
+*.sqlite3
+industriaai.db
+backend/*.db
+backend/*.sqlite3
+
+# Uploads & Runtime artifacts
+uploads/*
+!uploads/.gitkeep
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Temporary files & Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+tmp/
+*.tmp
+scratch/
+test_*.txt
+
+# IDE & OS
+.DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+.idea/
+.vscode/
+*.swp
+*.swo
