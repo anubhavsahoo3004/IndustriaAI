@@ -8,7 +8,7 @@ interface AuthContextType {
   activeBusiness: Business | null;
   businesses: Business[];
   isLoading: boolean;
-  login: (email: string, pass: string) => Promise<void>;
+  login: (email: string, pass: string) => Promise<User>;
   logout: () => void;
   switchDemoRole: (role: 'applicant' | 'admin' | 'officer') => Promise<void>;
   setActiveBusiness: (business: Business) => void;
@@ -33,12 +33,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const profile = await AuthService.getProfile();
       setUser(profile);
 
-      const bizList = await BusinessService.list();
-      setBusinesses(bizList);
-      if (bizList.length > 0) {
-        const savedBizId = localStorage.getItem('industria_active_biz_id');
-        const found = bizList.find((b) => b.id.toString() === savedBizId);
-        setActiveBusinessState(found || bizList[0]);
+      // Business data is secondary and must not invalidate user session
+      try {
+        const bizList = await BusinessService.list();
+        setBusinesses(bizList);
+        if (bizList.length > 0) {
+          const savedBizId = localStorage.getItem('industria_active_biz_id');
+          const found = bizList.find((b) => b.id.toString() === savedBizId);
+          setActiveBusinessState(found || bizList[0]);
+        }
+      } catch (bizErr) {
+        console.error('Business data loading failed on session restore:', bizErr);
+        setBusinesses([]);
+        setActiveBusinessState(null);
       }
     } catch (err) {
       console.error('Session restoration failed:', err);
@@ -53,19 +60,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchUserData();
   }, []);
 
-  const login = async (email: string, pass: string) => {
+  const login = async (email: string, pass: string): Promise<User> => {
     setIsLoading(true);
+
     try {
       const res = await AuthService.login(email, pass);
+
+      // Authentication succeeded
       localStorage.setItem('industria_token', res.access_token);
       setUser(res.user);
 
-      const bizList = await BusinessService.list();
-      setBusinesses(bizList);
-      if (bizList.length > 0) {
-        setActiveBusinessState(bizList[0]);
-        localStorage.setItem('industria_active_biz_id', bizList[0].id.toString());
+      // Business data is secondary and must not block login
+      try {
+        const bizList = await BusinessService.list();
+        setBusinesses(bizList);
+
+        if (bizList.length > 0) {
+          setActiveBusinessState(bizList[0]);
+          localStorage.setItem(
+            'industria_active_biz_id',
+            bizList[0].id.toString()
+          );
+        }
+      } catch (businessError) {
+        console.error('Business data loading failed after login:', businessError);
+
+        // Keep authenticated session alive
+        setBusinesses([]);
+        setActiveBusinessState(null);
       }
+
+      return res.user;
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setActiveBusinessState(bizList[0]);
       }
     } catch (e) {
-      console.error(e);
+      console.error('Error refreshing businesses:', e);
     }
   };
 

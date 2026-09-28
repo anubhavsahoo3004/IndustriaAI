@@ -7,7 +7,7 @@
 const rawApiUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim()?.replace(/\/+$/, '');
 export const API_BASE = rawApiUrl
   ? (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`)
-  : '/api';
+  : (import.meta.env.PROD ? 'https://industriaai-api.onrender.com/api' : '/api');
 
 export class ApiError extends Error {
   status: number;

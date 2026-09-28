@@ -51,6 +51,9 @@ def get_cors_origins() -> list[str]:
     """
     origins: set[str] = set()
 
+    # Always ensure canonical production frontend app origin is authorized
+    origins.add("https://industriaai-app.onrender.com")
+
     # 1. Add explicitly configured CORS_ORIGINS (comma-separated string)
     if settings.CORS_ORIGINS:
         for item in settings.CORS_ORIGINS.split(","):

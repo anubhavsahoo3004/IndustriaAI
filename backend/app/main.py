@@ -20,6 +20,13 @@ validate_production_config()
 # Create tables if not existing
 Base.metadata.create_all(bind=engine)
 
+# Auto-seed initial demo dataset if database is empty (e.g. Supabase production deployment)
+try:
+    from backend.seed import auto_seed_if_empty
+    auto_seed_if_empty()
+except Exception as e:
+    logger.error(f"Auto-seed check failed: {e}")
+
 app = FastAPI(
     title="IndustriaAI API",
     description="Intelligent Industrial Approval & Compliance Navigator - Smart India Hackathon (SIH26130)",

@@ -21,12 +21,7 @@ def create_sample_file(file_path: str, content: str):
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(content)
 
-def seed_database():
-    print("Initializing Database Tables...")
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
-
-    db = SessionLocal()
+def populate_seed_data(db):
     now = datetime.now(timezone.utc)
 
     print("Seeding Users...")
@@ -737,8 +732,31 @@ def seed_database():
         ))
 
     db.commit()
-    db.close()
     print("Database seeding completed successfully!")
+
+def seed_database():
+    print("Initializing Database Tables...")
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        populate_seed_data(db)
+    finally:
+        db.close()
+
+def auto_seed_if_empty():
+    db = SessionLocal()
+    try:
+        user_count = db.query(User).count()
+        if user_count == 0:
+            print("Database has 0 users. Seeding default demonstration dataset...")
+            populate_seed_data(db)
+            print("Database auto-seeding completed.")
+    except Exception as e:
+        print(f"Error checking/auto-seeding database: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     seed_database()

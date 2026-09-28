@@ -16,14 +16,21 @@ export const LoginPage: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      await login(email, password);
-      if (email.toLowerCase().includes('admin') || email.toLowerCase().includes('officer')) {
-        navigate('/admin/dashboard');
-      } else {
+      const authUser = await login(email, password);
+      if (authUser.role === 'applicant') {
         navigate('/dashboard');
+      } else {
+        navigate('/admin/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check credentials.');
+      const msg = err.message || '';
+      if (err.status === 401 || msg.includes('credentials') || msg.includes('Invalid email')) {
+        setError('Authentication failed. Invalid email or password credentials.');
+      } else if (msg.includes('fetch') || msg.includes('Failed to fetch') || !err.status) {
+        setError('Unable to connect to the application server. Please try again.');
+      } else {
+        setError(msg || 'Authentication failed. Session could not be established.');
+      }
     } finally {
       setLoading(false);
     }
@@ -33,14 +40,21 @@ export const LoginPage: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      await login(demoEmail, 'password123');
-      if (demoEmail === 'admin@industria.ai' || demoEmail === 'officer@industria.ai') {
-        navigate('/admin/dashboard');
-      } else {
+      const authUser = await login(demoEmail, 'password123');
+      if (authUser.role === 'applicant') {
         navigate('/dashboard');
+      } else {
+        navigate('/admin/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Demo login failed.');
+      const msg = err.message || '';
+      if (err.status === 401 || msg.includes('credentials')) {
+        setError('Authentication failed. Invalid demo credentials.');
+      } else if (msg.includes('fetch') || msg.includes('Failed to fetch') || !err.status) {
+        setError('Unable to connect to the application server. Please verify backend availability.');
+      } else {
+        setError(msg || 'Authentication failed. Session could not be established.');
+      }
     } finally {
       setLoading(false);
     }
