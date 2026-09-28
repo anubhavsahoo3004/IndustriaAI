@@ -41,11 +41,11 @@ services:
   # ----------------------------------------------------------------------------
   # 2. Frontend Static Site: IndustriaAI React/Vite App
   # ----------------------------------------------------------------------------
-  - type: static
+  - type: web
     name: industriaai-app
-    rootDir: frontend
+    runtime: static
     buildCommand: npm ci && npm run build
-    staticPublishPath: dist
+    staticPublishPath: frontend/dist
     routes:
       - type: rewrite
         source: /*
