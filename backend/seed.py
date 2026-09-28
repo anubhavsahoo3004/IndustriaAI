@@ -25,128 +25,163 @@ def populate_seed_data(db):
     now = datetime.now(timezone.utc)
 
     print("Seeding Users...")
-    applicant_user = User(
-        email="applicant@industria.ai",
-        hashed_password=get_password_hash("password123"),
-        full_name="Rajesh Kulkarni",
-        phone="+91 98230 45678",
-        role="applicant",
-        is_active=True
-    )
-    admin_user = User(
-        email="admin@industria.ai",
-        hashed_password=get_password_hash("password123"),
-        full_name="Dr. Sunita Deshmukh",
-        phone="+91 94220 11223",
-        role="admin",
-        department="Directorate of Industries, Maharashtra",
-        is_active=True
-    )
-    officer_user = User(
-        email="officer@industria.ai",
-        hashed_password=get_password_hash("password123"),
-        full_name="Sanjay Patil",
-        phone="+91 98221 99887",
-        role="officer",
-        department="MPCB & DISH Regional Scrutiny Officer",
-        is_active=True
-    )
-    db.add_all([applicant_user, admin_user, officer_user])
+    applicant_user = db.query(User).filter(User.email == "applicant@industria.ai").first()
+    if not applicant_user:
+        applicant_user = User(
+            email="applicant@industria.ai",
+            hashed_password=get_password_hash("password123"),
+            full_name="Rajesh Kulkarni",
+            phone="+91 98230 45678",
+            role="applicant",
+            is_active=True
+        )
+        db.add(applicant_user)
+
+    admin_user = db.query(User).filter(User.email == "admin@industria.ai").first()
+    if not admin_user:
+        admin_user = User(
+            email="admin@industria.ai",
+            hashed_password=get_password_hash("password123"),
+            full_name="Dr. Sunita Deshmukh",
+            phone="+91 94220 11223",
+            role="admin",
+            department="Directorate of Industries, Maharashtra",
+            is_active=True
+        )
+        db.add(admin_user)
+
+    officer_user = db.query(User).filter(User.email == "officer@industria.ai").first()
+    if not officer_user:
+        officer_user = User(
+            email="officer@industria.ai",
+            hashed_password=get_password_hash("password123"),
+            full_name="Sanjay Patil",
+            phone="+91 98221 99887",
+            role="officer",
+            department="MPCB & DISH Regional Scrutiny Officer",
+            is_active=True
+        )
+        db.add(officer_user)
+
     db.commit()
+    db.refresh(applicant_user)
+    db.refresh(admin_user)
+    db.refresh(officer_user)
 
     print("Seeding Approval Types...")
     approval_type_map = {}
     for item in MAHARASHTRA_APPROVALS_SEED:
-        app_type = ApprovalType(**item)
-        db.add(app_type)
-        db.commit()
-        db.refresh(app_type)
-        approval_type_map[app_type.code] = app_type
+        existing = db.query(ApprovalType).filter(ApprovalType.code == item["code"]).first()
+        if not existing:
+            app_type = ApprovalType(**item)
+            db.add(app_type)
+            db.commit()
+            db.refresh(app_type)
+            approval_type_map[app_type.code] = app_type
+        else:
+            approval_type_map[existing.code] = existing
 
     print("Seeding Support Schemes...")
     for scheme_data in MAHARASHTRA_SCHEMES_SEED:
-        scheme = SupportScheme(**scheme_data)
-        db.add(scheme)
+        existing = db.query(SupportScheme).filter(SupportScheme.scheme_code == scheme_data["scheme_code"]).first()
+        if not existing:
+            scheme = SupportScheme(**scheme_data)
+            db.add(scheme)
     db.commit()
 
     print("Seeding Knowledge Base Articles...")
     for kb in MAHARASHTRA_KNOWLEDGE_ARTICLES_SEED:
-        article = KnowledgeArticle(**kb)
-        db.add(article)
+        existing = db.query(KnowledgeArticle).filter(KnowledgeArticle.title == kb["title"]).first()
+        if not existing:
+            article = KnowledgeArticle(**kb)
+            db.add(article)
     db.commit()
 
     print("Seeding Primary Demo Business...")
-    primary_business = Business(
-        user_id=applicant_user.id,
-        name="Maharashtra Fresh Foods Pvt. Ltd.",
-        industry="Food Processing",
-        state="Maharashtra",
-        district="Pune",
-        project_type="New Unit",
-        project_stage="Civil Works",
-        scale="Medium",
-        investment_range="₹10 Cr - ₹50 Cr",
-        investment_amount_inr=24.50, # In Crores
-        employee_count=45,
-        business_type="Private Limited",
-        gstin="27AAACM4821K1Z5",
-        pan="AAACM4821K",
-        udyam_number="UDYAM-MH-26-0048912",
-        address="Plot No. E-42, MIDC Industrial Area, Phase II, Chakan, Taluka Khed, Pune - 410501",
-        plot_details="Plot E-42 (Area: 12,500 sq.m)",
-        electricity_load_kw=350.0,
-        water_requirement_kld=45.0,
-        effluent_discharge="Yes"
-    )
+    primary_business = db.query(Business).filter(Business.name == "Maharashtra Fresh Foods Pvt. Ltd.").first()
+    if not primary_business:
+        primary_business = Business(
+            user_id=applicant_user.id,
+            name="Maharashtra Fresh Foods Pvt. Ltd.",
+            industry="Food Processing",
+            state="Maharashtra",
+            district="Pune",
+            project_type="New Unit",
+            project_stage="Civil Works",
+            scale="Medium",
+            investment_range="₹10 Cr - ₹50 Cr",
+            investment_amount_inr=24.50, # In Crores
+            employee_count=45,
+            business_type="Private Limited",
+            gstin="27AAACM4821K1Z5",
+            pan="AAACM4821K",
+            udyam_number="UDYAM-MH-26-0048912",
+            address="Plot No. E-42, MIDC Industrial Area, Phase II, Chakan, Taluka Khed, Pune - 410501",
+            plot_details="Plot E-42 (Area: 12,500 sq.m)",
+            electricity_load_kw=350.0,
+            water_requirement_kld=45.0,
+            effluent_discharge="Yes"
+        )
+        db.add(primary_business)
+        db.commit()
+        db.refresh(primary_business)
 
     # Additional businesses for admin analytics
-    textile_business = Business(
-        user_id=applicant_user.id,
-        name="Sahyadri Integrated Textiles Ltd.",
-        industry="Textile",
-        state="Maharashtra",
-        district="Solapur",
-        project_type="New Unit",
-        project_stage="Planning",
-        scale="Large",
-        investment_range="> 50 Crore (Large)",
-        investment_amount_inr=62.0,
-        employee_count=180,
-        business_type="Private Limited",
-        gstin="27AABCS1234F1Z8",
-        pan="AABCS1234F",
-        udyam_number="UDYAM-MH-30-0081234",
-        address="Plot 108, Solapur MIDC Chincholi",
-        electricity_load_kw=800.0,
-        water_requirement_kld=80.0,
-        effluent_discharge="Yes"
-    )
+    textile_business = db.query(Business).filter(Business.name == "Sahyadri Integrated Textiles Ltd.").first()
+    if not textile_business:
+        textile_business = Business(
+            user_id=applicant_user.id,
+            name="Sahyadri Integrated Textiles Ltd.",
+            industry="Textile",
+            state="Maharashtra",
+            district="Solapur",
+            project_type="New Unit",
+            project_stage="Planning",
+            scale="Large",
+            investment_range="> 50 Crore (Large)",
+            investment_amount_inr=62.0,
+            employee_count=180,
+            business_type="Private Limited",
+            gstin="27AABCS1234F1Z8",
+            pan="AABCS1234F",
+            udyam_number="UDYAM-MH-30-0081234",
+            address="Plot 108, Solapur MIDC Chincholi",
+            electricity_load_kw=800.0,
+            water_requirement_kld=80.0,
+            effluent_discharge="Yes"
+        )
+        db.add(textile_business)
 
-    mfg_business = Business(
-        user_id=applicant_user.id,
-        name="TechnoForge Precision Engineering",
-        industry="Manufacturing",
-        state="Maharashtra",
-        district="Aurangabad",
-        project_type="Expansion",
-        project_stage="Operational",
-        scale="Small",
-        investment_range="1 - 10 Crore (Small)",
-        investment_amount_inr=7.8,
-        employee_count=30,
-        business_type="LLP",
-        gstin="27AAEFG9876P1Z1",
-        pan="AAEFG9876P",
-        udyam_number="UDYAM-MH-02-0019283",
-        address="Plot 44, Waluj MIDC, Aurangabad",
-        electricity_load_kw=180.0,
-        water_requirement_kld=10.0,
-        effluent_discharge="No"
-    )
+    mfg_business = db.query(Business).filter(Business.name == "TechnoForge Precision Engineering").first()
+    if not mfg_business:
+        mfg_business = Business(
+            user_id=applicant_user.id,
+            name="TechnoForge Precision Engineering",
+            industry="Manufacturing",
+            state="Maharashtra",
+            district="Aurangabad",
+            project_type="Expansion",
+            project_stage="Operational",
+            scale="Small",
+            investment_range="1 - 10 Crore (Small)",
+            investment_amount_inr=7.8,
+            employee_count=30,
+            business_type="LLP",
+            gstin="27AAEFG9876P1Z1",
+            pan="AAEFG9876P",
+            udyam_number="UDYAM-MH-02-0019283",
+            address="Plot 44, Waluj MIDC, Aurangabad",
+            electricity_load_kw=180.0,
+            water_requirement_kld=10.0,
+            effluent_discharge="No"
+        )
+        db.add(mfg_business)
 
-    db.add_all([primary_business, textile_business, mfg_business])
     db.commit()
-    db.refresh(primary_business)
+
+    if db.query(Application).filter(Application.business_id == primary_business.id).count() > 0:
+        print(f"Applications already seeded for {primary_business.name}. Skipping duplicate creation.")
+        return
 
     print("Seeding Documents and Mock Files for Primary Business...")
     uploads_dir = settings.UPLOAD_DIR
@@ -748,8 +783,9 @@ def auto_seed_if_empty():
     db = SessionLocal()
     try:
         user_count = db.query(User).count()
-        if user_count == 0:
-            print("Database has 0 users. Seeding default demonstration dataset...")
+        biz_count = db.query(Business).count()
+        if user_count == 0 or biz_count == 0:
+            print(f"Database needs seeding (users: {user_count}, businesses: {biz_count}). Seeding default demonstration dataset...")
             populate_seed_data(db)
             print("Database auto-seeding completed.")
     except Exception as e:

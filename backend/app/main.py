@@ -20,6 +20,24 @@ validate_production_config()
 # Create tables if not existing
 Base.metadata.create_all(bind=engine)
 
+# Ensure column types in PostgreSQL support unrestricted text length for citations
+try:
+    with engine.connect() as conn:
+        if "postgresql" in str(engine.url):
+            for table, cols in [
+                ("approval_types", ["source_section", "source_reference", "source_title", "source_url"]),
+                ("support_schemes", ["source_section", "source_reference", "source_title", "source_url"]),
+                ("compliance_tasks", ["legal_act_reference", "source_section", "source_reference", "source_title", "source_url"]),
+            ]:
+                for col in cols:
+                    try:
+                        conn.execute(text(f"ALTER TABLE {table} ALTER COLUMN {col} TYPE TEXT"))
+                        conn.commit()
+                    except Exception:
+                        pass
+except Exception as e:
+    logger.warning(f"Column type migration check notice: {e}")
+
 # Auto-seed initial demo dataset if database is empty (e.g. Supabase production deployment)
 try:
     from backend.seed import auto_seed_if_empty

@@ -17,11 +17,11 @@ class ComplianceTask(Base):
     # Status: UPCOMING, DUE_SOON, OVERDUE, COMPLETED
     status = Column(String(50), default="UPCOMING", nullable=False)
     
-    legal_act_reference = Column(String(255), nullable=True)
-    source_title = Column(String(255), nullable=True)
-    source_url = Column(String(255), nullable=True)
-    source_reference = Column(String(255), nullable=True)
-    source_section = Column(String(255), nullable=True)
+    legal_act_reference = Column(Text, nullable=True)
+    source_title = Column(Text, nullable=True)
+    source_url = Column(Text, nullable=True)
+    source_reference = Column(Text, nullable=True)
+    source_section = Column(Text, nullable=True)
     verification_status = Column(String(50), default="VERIFIED") # VERIFIED, NEEDS_VERIFICATION, DEMO_ONLY
     last_verified_date = Column(String(50), default="2026-09-25")
     

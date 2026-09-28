@@ -20,10 +20,10 @@ class SupportScheme(Base):
     financial_incentive_details = Column(Text, nullable=False) # e.g. "Up to 50% Capital Subsidy capped at ₹50 Lakhs"
     basic_eligibility = Column(Text, nullable=False)
     application_mode = Column(String(100), default="Online Single Window (Maitri)")
-    source_reference = Column(String(255), default="Government of Maharashtra Resolution (GR) No. PSI-2019/CR-12")
-    source_title = Column(String(255), nullable=True)
-    source_url = Column(String(255), nullable=True)
-    source_section = Column(String(255), nullable=True)
+    source_reference = Column(Text, default="Government of Maharashtra Resolution (GR) No. PSI-2019/CR-12")
+    source_title = Column(Text, nullable=True)
+    source_url = Column(Text, nullable=True)
+    source_section = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     demo_status = Column(String(50), default="CONFIGURED_PROTOTYPE")
     verification_status = Column(String(50), default="VERIFIED") # VERIFIED, NEEDS_VERIFICATION, DEMO_ONLY

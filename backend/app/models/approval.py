@@ -23,10 +23,10 @@ class ApprovalType(Base):
     default_workflow_steps = Column(JSON, default=list) # ["Document Verification", "Department Review", "Inspection", "Final Decision"]
     demo_status = Column(String(50), default="CONFIGURED_PROTOTYPE")
     verification_status = Column(String(50), default="VERIFIED") # VERIFIED, NEEDS_VERIFICATION, DEMO_ONLY
-    source_title = Column(String(255), nullable=True)
-    source_url = Column(String(255), nullable=True)
-    source_reference = Column(String(255), nullable=True)
-    source_section = Column(String(255), nullable=True)
+    source_title = Column(Text, nullable=True)
+    source_url = Column(Text, nullable=True)
+    source_reference = Column(Text, nullable=True)
+    source_section = Column(Text, nullable=True)
     last_verified_date = Column(String(50), default="2026-09-25")
     statutory_disclaimer = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
