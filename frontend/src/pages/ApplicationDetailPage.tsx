@@ -16,6 +16,7 @@ import { StatusBadge } from '../components/common/StatusBadge';
 import { RiskBadge } from '../components/common/RiskBadge';
 import { Timeline } from '../components/common/Timeline';
 import { Modal } from '../components/common/Modal';
+import { getActionWorkflowInfo } from '../utils/actionWorkflow';
 
 export const ApplicationDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -110,6 +111,7 @@ export const ApplicationDetailPage: React.FC = () => {
 
   const attachedDocs = application.application_documents || [];
   const manifest = application.required_manifest || application.approval_type?.required_documents_manifest || [];
+  const actionInfo = getActionWorkflowInfo(application);
 
   return (
     <div className="space-y-5">
@@ -122,7 +124,7 @@ export const ApplicationDetailPage: React.FC = () => {
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Applications List
         </button>
 
-        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
@@ -148,6 +150,40 @@ export const ApplicationDetailPage: React.FC = () => {
                 <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
                 Inquire with Assistant
               </Link>
+            </div>
+          </div>
+
+          {/* CURRENT ACTION - Prominent Simple Bordered Enterprise Panel */}
+          <div className="border border-slate-200 rounded-md p-4 bg-slate-50/70">
+            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-600 mb-3 border-b border-slate-200 pb-1.5 flex items-center justify-between">
+              <span>CURRENT ACTION</span>
+              <span className="text-[11px] font-mono font-medium text-slate-600 normal-case">{actionInfo.stageLabel} Stage</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-600 block">
+                  ACTION OWNER
+                </span>
+                <span className="text-sm font-semibold text-slate-900 block mt-1">
+                  {actionInfo.owner}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-600 block">
+                  NEXT ACTION
+                </span>
+                <span className="text-sm font-medium text-slate-800 block mt-1">
+                  {actionInfo.nextAction}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-600 block">
+                  DUE / SLA
+                </span>
+                <span className="text-sm font-medium text-slate-800 block mt-1">
+                  {actionInfo.dueDateOrSla}
+                </span>
+              </div>
             </div>
           </div>
         </div>

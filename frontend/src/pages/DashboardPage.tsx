@@ -27,6 +27,7 @@ import { ApplicationItem, InspectionItem, ComplianceTaskItem, AnalyticsOverview 
 import { StatCard } from '../components/common/StatCard';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { RiskBadge } from '../components/common/RiskBadge';
+import { getActionWorkflowInfo } from '../utils/actionWorkflow';
 
 const STATUS_PIE_COLORS: Record<string, string> = {
   APPROVED: '#10b981',
@@ -96,6 +97,11 @@ export const DashboardPage: React.FC = () => {
   };
 
   const actionRequiredList = applications.filter(isActionRequiredApp);
+
+  // Authoritative Applicant Action items: ONLY where Action Owner === 'Applicant'
+  const applicantAttentionList = applications
+    .map((app) => ({ app, info: getActionWorkflowInfo(app) }))
+    .filter((item) => item.info.owner === 'Applicant');
 
   // Derive Canonical Metrics from Backend Analytics source of truth
   const totalApps = analytics ? analytics.total_applications : applications.length;
@@ -224,63 +230,78 @@ export const DashboardPage: React.FC = () => {
         />
       </div>
 
-      {/* Urgent Action Banner */}
-      {actionRequiredList.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-amber-200/80 pb-2">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-700 flex-shrink-0" />
-              <h3 className="font-semibold text-xs text-amber-900">
-                Action Required ({actionRequiredList.length} application{actionRequiredList.length > 1 ? 's' : ''})
-              </h3>
-            </div>
-            <span className="text-[11px] font-medium text-amber-800 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded">
-              Pending Applicant Input
-            </span>
+      {/* "What Needs Your Attention" Section (Only Action Owner = Applicant) */}
+      <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-xs space-y-3">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+          <div className="space-y-0.5">
+            <h2 className="text-xs sm:text-sm font-bold tracking-tight text-slate-900">
+              What Needs Your Attention
+            </h2>
+            <p className="text-[11px] text-slate-500">
+              Applications requiring your direct input, documentation upload, or query response
+            </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-            {actionRequiredList.map((app) => {
-              const isMissingDocs = app.status === 'DOCUMENTS_REQUIRED';
-              const ctaText = isMissingDocs
-                ? 'Upload Documents'
-                : (app.delay_risk_level === 'HIGH' ? 'Review Scrutiny Memo' : 'Review Application');
-              return (
-                <div
-                  key={app.id}
-                  className="bg-white p-3.5 rounded-md border border-amber-200 flex flex-col justify-between gap-2.5"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="font-semibold text-xs text-slate-900 line-clamp-1">
-                        {app.approval_type?.name}
-                      </span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-semibold whitespace-nowrap">
-                        {app.application_number}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600">
-                      <span className="font-medium text-amber-800">Pending:</span>{' '}
-                      {app.next_action_prompt || 'Action required from applicant to resume departmental scrutiny.'}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                    <span className="text-slate-500 text-[11px]">
-                      {isMissingDocs ? 'Documents Required' : `SLA Delay Risk: ${app.delay_risk_level}`}
-                    </span>
-                    <Link
-                      to={`/applications/${app.id}`}
-                      className="px-2.5 py-1 rounded bg-amber-700 hover:bg-amber-800 text-white text-xs font-medium transition-colors inline-flex items-center gap-1"
-                    >
-                      {ctaText} <ArrowRight className="w-3 h-3" />
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+            {applicantAttentionList.length} Action{applicantAttentionList.length === 1 ? '' : 's'} Pending
+          </span>
         </div>
-      )}
+
+        {applicantAttentionList.length === 0 ? (
+          <div className="py-6 text-center text-xs text-slate-500 bg-slate-50 rounded-md border border-slate-100">
+            <p className="font-semibold text-slate-700">No actions currently require your attention.</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">All submitted applications are actively being reviewed by the respective departments.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-[11px]">
+                <tr>
+                  <th className="py-2.5 px-3">Application</th>
+                  <th className="py-2.5 px-3">Requirement</th>
+                  <th className="py-2.5 px-3">Action</th>
+                  <th className="py-2.5 px-3">Due Date</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3 text-right">Open</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {applicantAttentionList.map((item) => (
+                  <tr key={item.app.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="py-3 px-3">
+                      <span className="font-mono text-[11px] font-semibold text-slate-800 block">
+                        {item.app.application_number}
+                      </span>
+                      <span className="font-medium text-slate-900 block mt-0.5">
+                        {item.app.approval_type?.name}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-slate-700">
+                      <span className="line-clamp-2">{item.info.requirement}</span>
+                    </td>
+                    <td className="py-3 px-3 text-slate-800 font-medium">
+                      {item.info.nextAction}
+                    </td>
+                    <td className="py-3 px-3 font-mono text-[11px] text-slate-700 whitespace-nowrap">
+                      {item.info.dueDateOrSla.replace(/^Due:\s*/, '')}
+                    </td>
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      <StatusBadge status={item.app.status} />
+                    </td>
+                    <td className="py-3 px-3 text-right whitespace-nowrap">
+                      <Link
+                        to={`/applications/${item.app.id}`}
+                        className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs inline-flex items-center gap-1 transition-colors"
+                      >
+                        Open <ChevronRight className="w-3 h-3" />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Two Column Section: Status Distribution & Schedule */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">

@@ -12,6 +12,8 @@ import { ApplicationService } from '../services/application.service';
 import { ApplicationItem } from '../types';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { RiskBadge } from '../components/common/RiskBadge';
+import { ActionOwnerBadge } from '../components/common/ActionOwnerBadge';
+import { getActionWorkflowInfo } from '../utils/actionWorkflow';
 
 export const ApplicationsPage: React.FC = () => {
   const { activeBusiness } = useAuth();
@@ -25,6 +27,7 @@ export const ApplicationsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [riskFilter, setRiskFilter] = useState('ALL');
+  const [ownerFilter, setOwnerFilter] = useState('ALL');
 
   const fetchApplications = async () => {
     if (!activeBusiness) {
@@ -78,7 +81,10 @@ export const ApplicationsPage: React.FC = () => {
     const matchesStatus = statusFilter === 'ALL' || app.status === statusFilter;
     const matchesRisk = riskFilter === 'ALL' || app.delay_risk_level === riskFilter;
 
-    return matchesSearch && matchesStatus && matchesRisk;
+    const info = getActionWorkflowInfo(app);
+    const matchesOwner = ownerFilter === 'ALL' || info.owner === ownerFilter;
+
+    return matchesSearch && matchesStatus && matchesRisk && matchesOwner;
   });
 
   return (
@@ -95,7 +101,7 @@ export const ApplicationsPage: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Monitor clearance stages, statutory SLA timelines, and required applicant actions.
+            Monitor clearance stages, action owners, statutory SLA timelines, and required next steps.
           </p>
         </div>
 
@@ -152,6 +158,21 @@ export const ApplicationsPage: React.FC = () => {
         {/* Filter Dropdowns */}
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <div className="flex items-center gap-1.5">
+            <span className="text-slate-500 font-medium">Owner:</span>
+            <select
+              value={ownerFilter}
+              onChange={(e) => setOwnerFilter(e.target.value)}
+              className="px-2.5 py-1.5 rounded-md border border-slate-300 bg-white text-slate-700 text-xs font-medium focus:outline-none focus:border-slate-500"
+            >
+              <option value="ALL">All Owners</option>
+              <option value="Applicant">Applicant</option>
+              <option value="Department Officer">Department Officer</option>
+              <option value="Inspection Officer">Inspection Officer</option>
+              <option value="System">System</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1.5">
             <span className="text-slate-500 font-medium">Status:</span>
             <select
               value={statusFilter}
@@ -200,59 +221,78 @@ export const ApplicationsPage: React.FC = () => {
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-[11px]">
                 <tr>
-                  <th className="py-2.5 px-3">Application Reference & Name</th>
-                  <th className="py-2.5 px-3">Department / Authority</th>
-                  <th className="py-2.5 px-3">Workflow Stage</th>
+                  <th className="py-2.5 px-3">Application</th>
                   <th className="py-2.5 px-3">Status</th>
-                  <th className="py-2.5 px-3">SLA Timeline</th>
-                  <th className="py-2.5 px-3">Delay Risk</th>
-                  <th className="py-2.5 px-3">Assigned Desk</th>
-                  <th className="py-2.5 px-3 text-right">Action</th>
+                  <th className="py-2.5 px-3">Stage</th>
+                  <th className="py-2.5 px-3">Action Owner</th>
+                  <th className="py-2.5 px-3">Next Action</th>
+                  <th className="py-2.5 px-3">SLA</th>
+                  <th className="py-2.5 px-3">Last Update</th>
+                  <th className="py-2.5 px-3 text-right">Open</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredApps.map((app) => (
-                  <tr key={app.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3 px-3">
-                      <span className="font-mono text-[11px] font-semibold text-slate-700 block">
-                        {app.application_number}
-                      </span>
-                      <span className="font-medium text-slate-900 block mt-0.5">
-                        {app.approval_type?.name}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 text-slate-600">
-                      {app.approval_type?.issuing_authority}
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className="font-medium text-slate-800">
-                        {app.current_stage.replace(/_/g, ' ')}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3">
-                      <StatusBadge status={app.status} />
-                    </td>
-                    <td className="py-3 px-3 text-slate-600 font-mono text-[11px]">
-                      {app.submission_date || app.created_at
-                        ? `${Math.max(1, Math.floor((Date.now() - new Date(app.submission_date || app.created_at).getTime()) / (1000 * 60 * 60 * 24)))}d active`
-                        : 'Active'} / {app.approval_type?.standard_sla_days || 30}d SLA
-                    </td>
-                    <td className="py-3 px-3">
-                      <RiskBadge level={app.delay_risk_level} />
-                    </td>
-                    <td className="py-3 px-3 text-slate-500 text-[11px]">
-                      {app.assigned_officer ? app.assigned_officer.split('(')[0] : 'Scrutiny Cell'}
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      <Link
-                        to={`/applications/${app.id}`}
-                        className="px-2.5 py-1 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 font-medium inline-flex items-center gap-1 text-xs"
-                      >
-                        Details <ChevronRight className="w-3 h-3 text-slate-400" />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                {filteredApps.map((app) => {
+                  const info = getActionWorkflowInfo(app);
+                  const lastUpdate = app.updated_at || app.submission_date || app.created_at;
+                  const formattedLastUpdate = lastUpdate
+                    ? new Date(lastUpdate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                    : '—';
+
+                  return (
+                    <tr key={app.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3 px-3">
+                        <span className="font-mono text-[11px] font-semibold text-slate-800 block">
+                          {app.application_number}
+                        </span>
+                        <span className="font-medium text-slate-900 block mt-0.5 line-clamp-1">
+                          {app.approval_type?.name}
+                        </span>
+                        <span className="text-[10px] text-slate-500 block">
+                          {app.approval_type?.issuing_authority}
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <StatusBadge status={app.status} />
+                      </td>
+
+                      <td className="py-3 px-3 whitespace-nowrap text-slate-700 font-medium">
+                        {info.stageLabel}
+                      </td>
+
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <ActionOwnerBadge owner={info.owner} />
+                      </td>
+
+                      <td className="py-3 px-3 text-slate-800 font-medium max-w-xs">
+                        <span className="line-clamp-2">{info.nextAction}</span>
+                      </td>
+
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <span className="font-mono text-[11px] text-slate-700 block">
+                          {info.dueDateOrSla}
+                        </span>
+                        <span className="text-[10px] text-slate-500 block">
+                          {app.approval_type?.standard_sla_days || 30}d standard SLA
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-3 whitespace-nowrap text-slate-600 font-mono text-[11px]">
+                        {formattedLastUpdate}
+                      </td>
+
+                      <td className="py-3 px-3 text-right whitespace-nowrap">
+                        <Link
+                          to={`/applications/${app.id}`}
+                          className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs inline-flex items-center gap-1 transition-colors"
+                        >
+                          Open <ChevronRight className="w-3 h-3" />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

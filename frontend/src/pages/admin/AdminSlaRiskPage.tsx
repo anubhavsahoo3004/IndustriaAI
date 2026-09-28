@@ -12,6 +12,7 @@ import {
 import { AnalyticsService } from '../../services/analytics.service';
 import { SlaRiskItem } from '../../types';
 import { RiskBadge } from '../../components/common/RiskBadge';
+import { ActionOwnerBadge } from '../../components/common/ActionOwnerBadge';
 
 export const AdminSlaRiskPage: React.FC = () => {
   const [slaRisks, setSlaRisks] = useState<SlaRiskItem[]>([]);
@@ -147,13 +148,39 @@ export const AdminSlaRiskPage: React.FC = () => {
                 <div className="text-right self-start sm:self-auto bg-slate-50 px-3 py-2 rounded-md border border-slate-200">
                   <span className="text-[10px] uppercase font-bold text-slate-500 block">Stage Hold Time</span>
                   <strong className="text-xs font-bold font-mono text-slate-900">
-                    {item.days_in_current_stage} Days in {item.current_stage}
+                    {item.days_in_current_stage} Days in {item.current_stage.replace(/_/g, ' ')}
                   </strong>
                   <span className="text-[10px] text-slate-500 block">
                     (Standard SLA: {item.configured_sla_days} days)
                   </span>
                 </div>
               </div>
+
+              {/* Action Owner, Stage & Next Action Workflow Summary */}
+              {(() => {
+                const isApplicantOwner = item.reasons.some((r) => r.toLowerCase().includes('document') && r.toLowerCase().includes('missing'));
+                const isInspectionOwner = item.current_stage === 'INSPECTION' || item.reasons.some((r) => r.toLowerCase().includes('inspection'));
+                const owner = isApplicantOwner ? 'Applicant' : (isInspectionOwner ? 'Inspection Officer' : 'Department Officer');
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50/70 p-3 rounded-md border border-slate-200 text-xs">
+                    <div>
+                      <span className="text-[10px] uppercase font-semibold text-slate-500 block">Action Owner</span>
+                      <div className="mt-1">
+                        <ActionOwnerBadge owner={owner} compact />
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-semibold text-slate-500 block">Current Stage</span>
+                      <span className="font-medium text-slate-800 block mt-1">{item.current_stage.replace(/_/g, ' ')}</span>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <span className="text-[10px] uppercase font-semibold text-slate-500 block">Next Action</span>
+                      <span className="font-medium text-slate-800 block mt-1 line-clamp-1">{item.suggested_mitigation}</span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Show Identified Delay Reasons */}
               <div className="bg-slate-50 p-3.5 rounded-md border border-slate-200 space-y-1.5">
