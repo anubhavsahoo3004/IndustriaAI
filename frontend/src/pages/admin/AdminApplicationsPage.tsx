@@ -3,17 +3,8 @@ import { Link } from 'react-router-dom';
 import {
   FileCheck2,
   Search,
-  Filter,
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  ShieldAlert,
-  ArrowRight,
-  Sparkles,
-  Edit,
-  ExternalLink,
   ChevronRight,
-  UserCheck
+  Edit
 } from 'lucide-react';
 import { ApplicationService } from '../../services/application.service';
 import { ApplicationItem } from '../../types';
@@ -64,46 +55,45 @@ export const AdminApplicationsPage: React.FC = () => {
     fetchApplications();
   }, []);
 
-  const handleStatusChange = (status: string) => {
-    setNewStatus(status);
-    const validStages = stateMatrix?.valid_status_stage_map[status] || [];
-    if (validStages.length > 0 && !validStages.includes(newStage)) {
-      setNewStage(stateMatrix?.default_stage_for_status[status] || validStages[0]);
-    }
-  };
-
-  const openUpdateModal = (app: ApplicationItem) => {
+  const handleOpenModal = (app: ApplicationItem) => {
     setSelectedApp(app);
     setNewStatus(app.status);
     setNewStage(app.current_stage);
-    setOfficerRemarks(app.officer_remarks || '');
-    setAssignedOfficer(app.assigned_officer || 'Desk Scrutiny Officer');
+    setOfficerRemarks('');
+    setAssignedOfficer(app.assigned_officer || 'Sanjay Patil (Senior Field Officer)');
     setAdvanceStage(false);
     setUpdateSuccess(null);
   };
 
-  const handleUpdateStatus = async (e: React.FormEvent) => {
+  const handleStatusChange = (status: string) => {
+    setNewStatus(status);
+    if (stateMatrix?.default_stage_for_status && stateMatrix.default_stage_for_status[status]) {
+      setNewStage(stateMatrix.default_stage_for_status[status]);
+    }
+  };
+
+  const handleSaveUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedApp) return;
 
     setUpdating(true);
     setUpdateSuccess(null);
     try {
-      const updated = await ApplicationService.updateStatus(selectedApp.id, {
+      await ApplicationService.updateStatus(selectedApp.id, {
         status: newStatus,
         current_stage: newStage,
-        officer_remarks: officerRemarks,
-        assigned_officer: assignedOfficer,
         advance_stage: advanceStage,
+        officer_remarks: officerRemarks || 'Administrative review action recorded by scrutiny desk.',
+        assigned_officer: assignedOfficer,
       });
 
-      setUpdateSuccess(`Application ${updated.application_number} updated to ${updated.status}.`);
+      setUpdateSuccess('Application status and workflow stage successfully updated.');
       await fetchApplications();
       setTimeout(() => {
         setSelectedApp(null);
       }, 1000);
-    } catch (err) {
-      console.error('Failed to update status:', err);
+    } catch (err: any) {
+      console.error('Update failed:', err);
     } finally {
       setUpdating(false);
     }
@@ -113,125 +103,144 @@ export const AdminApplicationsPage: React.FC = () => {
     const matchesSearch =
       app.application_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (app.business_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (app.approval_type?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
+      (app.approval_type?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (app.approval_type?.issuing_authority || '').toLowerCase().includes(searchQuery.toLowerCase());
+
     const matchesStatus = statusFilter === 'ALL' || app.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
               Department Scrutiny & Review Queue
             </h1>
-            <span className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 font-bold px-2.5 py-0.5 rounded-full">
+            <span className="text-xs bg-slate-100 text-slate-700 border border-slate-200 font-semibold px-2 py-0.5 rounded font-mono">
               {applications.length} Applications Total
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Review applicant documents, advance statutory workflow stages, assign field scrutiny officers, and log official decisions.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Evaluate dossiers, issue statutory scrutiny determinations, schedule inspections, and advance workflow steps.
           </p>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Filter Bar */}
+      <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by app number, business name, or clearance..."
+            placeholder="Search by reference, enterprise name, or department..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
+            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-500"
           />
         </div>
 
         <div className="flex items-center gap-2 text-xs">
-          <span className="text-slate-400 font-semibold">Filter Status:</span>
+          <span className="text-slate-500 font-medium">Status Filter:</span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 font-semibold"
+            className="px-2.5 py-1.5 rounded-md border border-slate-300 bg-white text-slate-700 text-xs font-medium focus:outline-none focus:border-slate-500"
           >
-            <option value="ALL">All Statuses</option>
+            <option value="ALL">All Statuses ({applications.length})</option>
             <option value="DOCUMENTS_REQUIRED">Documents Required</option>
             <option value="UNDER_REVIEW">Under Review</option>
             <option value="INSPECTION_PENDING">Inspection Pending</option>
-            <option value="APPROVED">Approved</option>
+            <option value="APPROVED">Approved / Completed</option>
             <option value="ACTION_REQUIRED">Action Required</option>
           </select>
         </div>
       </div>
 
-      {/* Applications Table */}
+      {/* Scrutiny Queue Table */}
       {loading ? (
         <div className="text-center py-12 text-xs text-slate-500">
-          Loading departmental queue...
+          Loading scrutiny queue...
         </div>
       ) : filteredApps.length === 0 ? (
-        <div className="text-center py-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 space-y-3">
+        <div className="text-center py-12 bg-white border border-slate-200 rounded-lg p-6 space-y-2">
           <FileCheck2 className="w-8 h-8 text-slate-400 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">No applications match filter.</h3>
+          <h3 className="text-xs font-semibold text-slate-700">No applications found in queue.</h3>
+          <p className="text-[11px] text-slate-500">Adjust your filter options to inspect other cases.</p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-lg shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[10px] uppercase font-bold text-slate-400">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-[11px]">
                 <tr>
-                  <th className="py-3 px-4 font-bold">App Number</th>
-                  <th className="py-3 px-4 font-bold">Applicant Business</th>
-                  <th className="py-3 px-4 font-bold">Clearance Category</th>
-                  <th className="py-3 px-4 font-bold">Current Stage</th>
-                  <th className="py-3 px-4 font-bold">Status</th>
-                  <th className="py-3 px-4 font-bold">SLA Delay Risk</th>
-                  <th className="py-3 px-4 font-bold">Assigned Officer</th>
-                  <th className="py-3 px-4 font-bold text-right">Actions</th>
+                  <th className="py-2.5 px-3">Application Ref & Enterprise</th>
+                  <th className="py-2.5 px-3">Clearance / Dept</th>
+                  <th className="py-2.5 px-3">Current Stage</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3">Pipeline Days</th>
+                  <th className="py-2.5 px-3">SLA Risk</th>
+                  <th className="py-2.5 px-3 text-right">Administrative Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100">
                 {filteredApps.map((app) => (
-                  <tr key={app.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-blue-600 dark:text-blue-400">
-                      {app.application_number}
+                  <tr key={app.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="py-3 px-3">
+                      <span className="font-mono text-[11px] font-semibold text-slate-800 block">
+                        {app.application_number}
+                      </span>
+                      <span className="font-medium text-slate-900 block mt-0.5">
+                        {app.business_name}
+                      </span>
+                      <span className="text-[10px] text-slate-500 block">
+                        {app.business_district}, Maharashtra
+                      </span>
                     </td>
-                    <td className="py-3 px-4">
-                      <strong className="text-slate-900 dark:text-white block">{app.business_name}</strong>
-                      <span className="text-[10px] text-slate-400">{app.business_industry} • {app.business_district}</span>
+
+                    <td className="py-3 px-3">
+                      <span className="font-medium text-slate-800 block">
+                        {app.approval_type?.name}
+                      </span>
+                      <span className="text-[10px] text-slate-500 block">
+                        {app.approval_type?.issuing_authority}
+                      </span>
                     </td>
-                    <td className="py-3 px-4">
-                      <span className="font-semibold text-slate-800 dark:text-slate-200 block">{app.approval_type?.name}</span>
-                      <span className="text-[10px] text-slate-400">{app.approval_type?.department}</span>
-                    </td>
-                    <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
+
+                    <td className="py-3 px-3 font-medium text-slate-800">
                       {app.current_stage.replace(/_/g, ' ')}
                     </td>
-                    <td className="py-3 px-4">
+
+                    <td className="py-3 px-3">
                       <StatusBadge status={app.status} />
                     </td>
-                    <td className="py-3 px-4">
+
+                    <td className="py-3 px-3 font-mono text-[11px] text-slate-700">
+                      {app.submission_date || app.created_at
+                        ? `${Math.max(1, Math.floor((Date.now() - new Date(app.submission_date || app.created_at).getTime()) / (1000 * 60 * 60 * 24)))}d active`
+                        : 'Active'} / {app.approval_type?.standard_sla_days || 30}d
+                    </td>
+
+                    <td className="py-3 px-3">
                       <RiskBadge level={app.delay_risk_level} />
                     </td>
-                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
-                      {app.assigned_officer || 'Unassigned'}
-                    </td>
-                    <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
-                      <button
-                        onClick={() => openUpdateModal(app)}
-                        className="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 hover:bg-purple-100 font-bold"
-                      >
-                        Update
-                      </button>
+
+                    <td className="py-3 px-3 text-right space-x-1.5 whitespace-nowrap">
                       <Link
                         to={`/applications/${app.id}`}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 font-semibold inline-block"
+                        className="px-2 py-1 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1"
                       >
-                        View
+                        Dossier <ChevronRight className="w-3 h-3 text-slate-400" />
                       </Link>
+
+                      <button
+                        onClick={() => handleOpenModal(app)}
+                        className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium inline-flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <Edit className="w-3 h-3" /> Update Status
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -241,111 +250,111 @@ export const AdminApplicationsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Update Application Modal */}
+      {/* Scrutiny Status Update Modal */}
       {selectedApp && (
         <Modal
           isOpen={true}
           onClose={() => setSelectedApp(null)}
-          title={`Update Scrutiny Status: ${selectedApp.application_number}`}
-          subtitle={`${selectedApp.approval_type?.name} for ${selectedApp.business_name}`}
+          title="Administrative Scrutiny Determination"
+          subtitle={`Case: ${selectedApp.application_number} • ${selectedApp.business_name}`}
         >
-          <form onSubmit={handleUpdateStatus} className="space-y-4 text-xs">
+          <form onSubmit={handleSaveUpdate} className="space-y-4">
             {updateSuccess && (
-              <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
+              <div className="p-2.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
                 {updateSuccess}
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Application Status *
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Determination Status
                 </label>
                 <select
                   value={newStatus}
                   onChange={(e) => handleStatusChange(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-bold"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                 >
-                  <option value="UNDER_REVIEW">UNDER_REVIEW</option>
-                  <option value="INSPECTION_PENDING">INSPECTION_PENDING</option>
-                  <option value="APPROVED">APPROVED</option>
-                  <option value="ACTION_REQUIRED">ACTION_REQUIRED</option>
-                  <option value="DOCUMENTS_REQUIRED">DOCUMENTS_REQUIRED</option>
-                  <option value="REJECTED">REJECTED</option>
+                  <option value="UNDER_REVIEW">UNDER REVIEW (Scrutiny in progress)</option>
+                  <option value="DOCUMENTS_REQUIRED">DOCUMENTS REQUIRED (Deficiency notice)</option>
+                  <option value="INSPECTION_PENDING">INSPECTION PENDING (Field audit assigned)</option>
+                  <option value="APPROVED">APPROVED (Statutory clearance granted)</option>
+                  <option value="REJECTED">REJECTED (Declined with grounds)</option>
                 </select>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Workflow Stage *
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Workflow Procedural Stage
                 </label>
                 <select
                   value={newStage}
                   onChange={(e) => setNewStage(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-medium"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-slate-500 font-medium"
                 >
-                  {(stateMatrix?.valid_status_stage_map[newStatus] || ['SUBMITTED', 'DOC_VERIFICATION', 'DEPT_REVIEW', 'INSPECTION', 'FINAL_DECISION', 'COMPLETED']).map((st) => (
-                    <option key={st} value={st}>
-                      {st.replace(/_/g, ' ')}
-                    </option>
-                  ))}
+                  <option value="SUBMISSION">1. Application Submission</option>
+                  <option value="DEPT_REVIEW">2. Department Scrutiny & Review</option>
+                  <option value="INSPECTION">3. Site / Field Inspection</option>
+                  <option value="FINAL_APPROVAL">4. Final Administrative Sanction</option>
+                  <option value="COMPLETED">5. Completed / Discharged</option>
                 </select>
               </div>
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Assign Scrutiny Officer
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Assigned Scrutiny Officer
               </label>
               <input
                 type="text"
                 value={assignedOfficer}
                 onChange={(e) => setAssignedOfficer(e.target.value)}
-                placeholder="e.g. Sanjay Patil (MPCB Regional Officer)"
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"
+                placeholder="e.g. Sanjay Patil (Senior Scrutiny Officer)"
+                className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-slate-500"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Official Scrutiny Remarks
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                Official Department Remarks & Directions
               </label>
               <textarea
                 rows={3}
+                required
                 value={officerRemarks}
                 onChange={(e) => setOfficerRemarks(e.target.value)}
-                placeholder="Enter departmental review findings or required applicant clarifications..."
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"
+                placeholder="Record scrutiny findings, deficiency notes, or inspection orders..."
+                className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-slate-500"
               />
             </div>
 
-            <div className="flex items-center gap-2 p-3 bg-purple-50 dark:bg-purple-950/30 rounded-xl border border-purple-100 dark:border-purple-900/50">
+            <div className="flex items-center gap-2 p-2.5 rounded bg-slate-50 border border-slate-200">
               <input
                 type="checkbox"
-                id="advanceStage"
+                id="advStage"
                 checked={advanceStage}
                 onChange={(e) => setAdvanceStage(e.target.checked)}
-                className="w-4 h-4 text-purple-600 rounded"
+                className="rounded border-slate-300 text-slate-900 focus:ring-0"
               />
-              <label htmlFor="advanceStage" className="font-semibold text-purple-900 dark:text-purple-200">
-                Advance workflow timeline to next sequential stage automatically
+              <label htmlFor="advStage" className="text-xs text-slate-700 font-medium cursor-pointer">
+                Automatically mark current workflow step completed and advance sequential stage
               </label>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setSelectedApp(null)}
-                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 text-xs font-semibold"
+                className="px-3 py-1.5 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-medium"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={updating}
-                className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-md shadow-purple-500/20 disabled:opacity-50"
+                className="px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold disabled:opacity-50 transition-colors cursor-pointer"
               >
-                {updating ? 'Saving...' : 'Save & Publish Status'}
+                {updating ? 'Recording Decision...' : 'Commit Determination'}
               </button>
             </div>
           </form>

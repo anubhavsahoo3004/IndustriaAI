@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layers, Shield, Briefcase, UserCheck, ArrowRight, Sparkles, Building2, CheckCircle2 } from 'lucide-react';
+import { Layers, Briefcase, Shield, UserCheck, ArrowRight, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export const LoginPage: React.FC = () => {
@@ -46,170 +46,183 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between">
       {/* Top Bar */}
-      <div className="border-b border-slate-800/80 bg-slate-900/60 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-            <Layers className="w-5 h-5 text-white" />
+      <div className="border-b border-slate-200 bg-white px-6 py-2.5 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded bg-slate-900 text-white flex items-center justify-center">
+            <Layers className="w-4 h-4 text-white" />
           </div>
-          <span className="font-bold tracking-tight text-white text-base">
-            INDUSTRIA<span className="text-blue-500">AI</span>
+          <span className="font-bold tracking-tight text-slate-900 text-sm">
+            INDUSTRIAAI <span className="font-normal text-slate-500">Navigator</span>
           </span>
-          <span className="text-xs text-slate-400 hidden sm:inline">
-            • Maharashtra Industrial Approval Navigator (SIH26130)
+          <span className="text-xs text-slate-500 hidden sm:inline">
+            • Maharashtra Industrial Approvals & Compliance
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] bg-blue-950 text-blue-300 border border-blue-800/60 px-2 py-0.5 rounded font-mono">
-            LIVE DEMO ENVIRONMENT
+          <span className="text-[11px] bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 rounded font-mono">
+            Smart India Hackathon 2026 • PS 26130
           </span>
         </div>
       </div>
 
       {/* Main Login Area */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
-        <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-10">
+        <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left: Product Value Prop */}
-          <div className="lg:col-span-6 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/80 border border-blue-800 text-blue-400 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5" />
-              Smart India Hackathon SIH26130 Prototype
-            </div>
-
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
-              Personalized Industrial <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">Approval Intelligence</span>
-            </h1>
-
-            <p className="text-sm sm:text-base text-slate-400 leading-relaxed">
-              Transforming complex Maharashtra regulatory compliance into an automated, transparent, and proactive action roadmap for entrepreneurs and industries.
-            </p>
-
-            {/* Key feature pills */}
-            <div className="space-y-2.5 pt-2">
-              <div className="flex items-center gap-3 text-xs text-slate-300">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                <span>Deterministic rules engine tailored to Maharashtra industrial laws</span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-slate-300">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                <span>AI Document completeness checks & profile consistency analysis</span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-slate-300">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                <span>Explainable SLA Delay Risk engine with administrative bottleneck detection</span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-slate-300">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                <span>Grounded contextual AI assistant citing actual regulatory records</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Auth Card with 1-Click Demo Accounts */}
-          <div className="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
+          <div className="lg:col-span-6 space-y-5 lg:pr-4">
             <div>
-              <h2 className="text-xl font-bold text-white">Sign In to Workspace</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Select a demo persona for instant access or enter credentials below.
+              <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded">
+                Smart India Hackathon 2026 • PS 26130
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mt-2.5">
+                Industrial Approval & Compliance Navigator
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
+                Manage approvals, documents, inspections and compliance requirements from one workspace.
               </p>
             </div>
 
-            {/* 1-Click Demo Persona Cards */}
-            <div className="space-y-2.5">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Instant 1-Click Demo Personas:
+            {/* Operational features list */}
+            <div className="space-y-2 pt-1">
+              <div className="flex items-start gap-2.5 text-xs text-slate-700">
+                <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <span>Deterministic statutory rules engine mapped to Maharashtra industrial acts</span>
+              </div>
+              <div className="flex items-start gap-2.5 text-xs text-slate-700">
+                <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <span>Automated document verification and business profile consistency checks</span>
+              </div>
+              <div className="flex items-start gap-2.5 text-xs text-slate-700">
+                <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <span>Transparent SLA delay risk monitoring and administrative bottleneck detection</span>
+              </div>
+              <div className="flex items-start gap-2.5 text-xs text-slate-700">
+                <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <span>Contextual compliance assistant citing actual regulatory department records</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-600 space-y-1">
+              <span className="font-semibold text-slate-800 block">Single Window Operational Scope:</span>
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                Covers statutory clearances from Maharashtra Pollution Control Board (MPCB), Food & Drug Administration (FDA), Directorate of Industrial Safety & Health (DISH), MSEDCL, and MIDC.
+              </p>
+            </div>
+          </div>
+
+          {/* Right: Auth Card with Selectable Rectangular Personas */}
+          <div className="lg:col-span-6 bg-white border border-slate-200 rounded-lg p-5 sm:p-6 shadow-xs space-y-5">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Sign In to Workspace</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Select a demonstration persona below or authenticate with registered credentials.
+              </p>
+            </div>
+
+            {/* 1-Click Selectable Rectangular Persona Rows */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                Select Persona (Instant Demo Access):
               </p>
 
               <button
                 type="button"
                 onClick={() => handleDemoLogin('applicant@industria.ai')}
                 disabled={loading}
-                className="w-full text-left p-3 rounded-xl border border-blue-800/60 bg-blue-950/30 hover:bg-blue-950/60 hover:border-blue-600 transition-all flex items-center justify-between group"
+                className="w-full text-left p-3 rounded-md border border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition-colors flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-blue-600 text-white">
+                  <div className="p-2 rounded bg-slate-100 text-slate-700">
                     <Briefcase className="w-4 h-4" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-white">Applicant Persona</span>
-                      <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.2 rounded font-mono">Primary Demo</span>
+                      <span className="text-xs font-bold text-slate-900">Applicant</span>
+                      <span className="text-[10px] bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.2 rounded font-mono">
+                        Enterprise
+                      </span>
                     </div>
-                    <p className="text-[11px] text-slate-400">
-                      Rajesh Kulkarni • Maharashtra Fresh Foods Pvt. Ltd. (Food Processing)
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Rajesh Kulkarni • Maharashtra Fresh Foods Pvt. Ltd.
                     </p>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-blue-400 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
               </button>
 
               <button
                 type="button"
                 onClick={() => handleDemoLogin('admin@industria.ai')}
                 disabled={loading}
-                className="w-full text-left p-3 rounded-xl border border-purple-800/60 bg-purple-950/30 hover:bg-purple-950/60 hover:border-purple-600 transition-all flex items-center justify-between group"
+                className="w-full text-left p-3 rounded-md border border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition-colors flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-purple-600 text-white">
+                  <div className="p-2 rounded bg-slate-100 text-slate-700">
                     <Shield className="w-4 h-4" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-white">Department Admin Persona</span>
-                      <span className="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded font-mono">Govt Directorate</span>
+                      <span className="text-xs font-bold text-slate-900">Department Admin</span>
+                      <span className="text-[10px] bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.2 rounded font-mono">
+                        State Directorate
+                      </span>
                     </div>
-                    <p className="text-[11px] text-slate-400">
-                      Dr. Sunita Deshmukh • Full analytics, SLA bottlenecks & approvals
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Dr. Sunita Deshmukh • Cross-departmental SLA & bottleneck oversight
                     </p>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-purple-400 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
               </button>
 
               <button
                 type="button"
                 onClick={() => handleDemoLogin('officer@industria.ai')}
                 disabled={loading}
-                className="w-full text-left p-3 rounded-xl border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800/80 hover:border-slate-500 transition-all flex items-center justify-between group"
+                className="w-full text-left p-3 rounded-md border border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition-colors flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-slate-700 text-white">
+                  <div className="p-2 rounded bg-slate-100 text-slate-700">
                     <UserCheck className="w-4 h-4" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-white">Field Inspection Officer</span>
-                      <span className="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.2 rounded font-mono">Pune Region</span>
+                      <span className="text-xs font-bold text-slate-900">Field Inspection Officer</span>
+                      <span className="text-[10px] bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.2 rounded font-mono">
+                        Pune Region Desk
+                      </span>
                     </div>
-                    <p className="text-[11px] text-slate-400">
-                      Sanjay Patil • MPCB & DISH Field Scrutiny Officer
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Sanjay Patil • MPCB & DISH field scrutiny & inspection verification
                     </p>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
               </button>
             </div>
 
-            <div className="relative flex py-1 items-center">
-              <div className="flex-grow border-t border-slate-800"></div>
-              <span className="flex-shrink mx-4 text-slate-500 text-xs uppercase tracking-wider font-semibold">Or Sign In with Email</span>
-              <div className="flex-grow border-t border-slate-800"></div>
+            <div className="relative flex py-0.5 items-center">
+              <div className="flex-grow border-t border-slate-200"></div>
+              <span className="flex-shrink mx-3 text-slate-400 text-[10px] uppercase tracking-wider font-semibold">
+                Or Sign In with Email
+              </span>
+              <div className="flex-grow border-t border-slate-200"></div>
             </div>
 
             {/* Error banner */}
             {error && (
-              <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-800 text-rose-300 text-xs">
+              <div className="p-2.5 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs">
                 {error}
               </div>
             )}
 
             {/* Credentials form */}
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-slate-700 mb-1">
                   Email Address
                 </label>
                 <input
@@ -218,12 +231,12 @@ export const LoginPage: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="applicant@industria.ai"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-md bg-white border border-slate-300 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-slate-600 focus:ring-1 focus:ring-slate-600"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-slate-700 mb-1">
                   Password
                 </label>
                 <input
@@ -232,14 +245,14 @@ export const LoginPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-md bg-white border border-slate-300 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-slate-600 focus:ring-1 focus:ring-slate-600"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 transition-colors disabled:opacity-50"
+                className="w-full py-2 px-4 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {loading ? 'Authenticating...' : 'Sign In'}
               </button>
@@ -249,8 +262,8 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-slate-800/80 bg-slate-900/40 px-6 py-3 text-center text-xs text-slate-500">
-        IndustriaAI Intelligent Industrial Approval & Compliance Navigator • SIH26130 Hackathon Prototype • State Focus: Maharashtra
+      <div className="border-t border-slate-200 bg-white px-6 py-2.5 text-center text-xs text-slate-500">
+        IndustriaAI Industrial Approval & Compliance Navigator • Smart India Hackathon 2026 Prototype • State Focus: Maharashtra
       </div>
     </div>
   );

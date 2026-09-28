@@ -5,7 +5,7 @@ import { Sidebar } from '../components/common/Sidebar';
 
 export const AppLayout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans text-slate-900 dark:text-slate-100 antialiased">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 antialiased">
       <Header />
       <div className="flex-1 flex overflow-hidden">
         <Sidebar />

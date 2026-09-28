@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Clock, AlertCircle, CircleDashed } from 'lucide-react';
+import { Check, Clock, AlertCircle, Circle } from 'lucide-react';
 import { WorkflowStep } from '../../types';
 
 interface TimelineProps {
@@ -11,7 +11,7 @@ interface TimelineProps {
 export const Timeline: React.FC<TimelineProps> = ({ steps, currentStage, className = '' }) => {
   if (!steps || steps.length === 0) {
     return (
-      <div className="text-center py-6 text-sm text-slate-500">
+      <div className="text-center py-6 text-xs text-slate-500">
         No workflow stages recorded.
       </div>
     );
@@ -20,10 +20,10 @@ export const Timeline: React.FC<TimelineProps> = ({ steps, currentStage, classNa
   const sortedSteps = [...steps].sort((a, b) => a.step_order - b.step_order);
 
   return (
-    <div className={`space-y-6 ${className}`}>
-      <div className="relative pl-6 sm:pl-8">
+    <div className={`space-y-4 ${className}`}>
+      <div className="relative pl-7">
         {/* Continuous track line */}
-        <div className="absolute left-[15px] sm:left-[19px] top-3 bottom-3 w-0.5 bg-slate-200 dark:bg-slate-800" />
+        <div className="absolute left-[13px] top-2 bottom-2 w-0.5 bg-slate-200" />
 
         {sortedSteps.map((step, idx) => {
           const isCompleted = step.status === 'COMPLETED';
@@ -31,80 +31,72 @@ export const Timeline: React.FC<TimelineProps> = ({ steps, currentStage, classNa
           const isActionReq = !isCompleted && step.status === 'ACTION_REQUIRED';
 
           return (
-            <div key={step.id || idx} className="relative mb-6 last:mb-0">
+            <div key={step.id || idx} className="relative mb-4 last:mb-0">
               {/* Step indicator node */}
               <div
-                className={`absolute -left-[24px] sm:-left-[32px] top-0.5 flex items-center justify-center w-8 h-8 rounded-full border-2 bg-white dark:bg-slate-900 transition-all ${
+                className={`absolute -left-[27px] top-0.5 flex items-center justify-center w-6 h-6 rounded-full border bg-white text-xs ${
                   isCompleted
-                    ? 'border-emerald-500 text-emerald-500 shadow-sm'
+                    ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
                     : isInProgress
-                    ? 'border-blue-600 text-blue-600 ring-4 ring-blue-100 dark:ring-blue-950/50'
+                    ? 'border-slate-800 bg-slate-900 text-white font-bold'
                     : isActionReq
-                    ? 'border-amber-500 text-amber-500 ring-4 ring-amber-100 dark:ring-amber-950/50'
-                    : 'border-slate-300 dark:border-slate-700 text-slate-400'
+                    ? 'border-amber-600 bg-amber-50 text-amber-700 font-bold'
+                    : 'border-slate-300 text-slate-400'
                 }`}
               >
                 {isCompleted ? (
-                  <CheckCircle2 className="w-5 h-5 fill-emerald-50 text-emerald-600 dark:fill-emerald-950/30" />
+                  <Check className="w-3.5 h-3.5 text-emerald-700 stroke-[2.5]" />
                 ) : isInProgress ? (
-                  <Clock className="w-4 h-4 animate-spin text-blue-600" />
+                  <span className="w-2 h-2 rounded-full bg-white" />
                 ) : isActionReq ? (
-                  <AlertCircle className="w-4 h-4 text-amber-600" />
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-700" />
                 ) : (
-                  <CircleDashed className="w-4 h-4 text-slate-400" />
+                  <span className="text-[10px] text-slate-400">{step.step_order}</span>
                 )}
               </div>
 
               {/* Step content card */}
               <div
-                className={`p-4 rounded-xl border transition-all ${
+                className={`p-3.5 rounded-lg border bg-white ${
                   isInProgress
-                    ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
-                    : isCompleted
-                    ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
-                    : 'bg-slate-50/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-70'
+                    ? 'border-slate-400 shadow-xs'
+                    : isActionReq
+                    ? 'border-amber-300 bg-amber-50/30'
+                    : 'border-slate-200'
                 }`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                      Stage {step.step_order}
+                    <span className="text-xs font-bold text-slate-900">
+                      Step {step.step_order}: {step.step_name}
                     </span>
-                    <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-                      {step.step_name}
-                    </h4>
+                    <span
+                      className={`text-[10px] font-medium px-1.5 py-0.2 rounded border ${
+                        isCompleted
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : isInProgress
+                          ? 'bg-slate-100 text-slate-800 border-slate-300 font-semibold'
+                          : isActionReq
+                          ? 'bg-amber-50 text-amber-800 border-amber-200'
+                          : 'bg-slate-50 text-slate-500 border-slate-200'
+                      }`}
+                    >
+                      {step.status.replace(/_/g, ' ')}
+                    </span>
                   </div>
-                  <span
-                    className={`text-xs font-medium px-2 py-0.5 rounded-full self-start sm:self-auto ${
-                      isCompleted
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
-                        : isInProgress
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300'
-                        : isActionReq
-                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
-                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                    }`}
-                  >
-                    {step.status}
-                  </span>
-                </div>
 
-                {step.officer_notes && (
-                  <p className="mt-2 text-xs text-slate-600 dark:text-slate-300 bg-white/80 dark:bg-slate-800/80 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/50">
-                    <strong className="text-slate-700 dark:text-slate-200">Remarks:</strong> {step.officer_notes}
-                  </p>
-                )}
-
-                <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
-                  {step.started_at && (
-                    <span>Started: {new Date(step.started_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                  )}
                   {step.completed_at && (
-                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span className="text-[11px] text-slate-500 font-mono">
                       Completed: {new Date(step.completed_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </span>
                   )}
                 </div>
+
+                {step.officer_notes && (
+                  <p className="mt-1.5 text-xs text-slate-600 leading-relaxed border-t border-slate-100 pt-1.5">
+                    {step.officer_notes}
+                  </p>
+                )}
               </div>
             </div>
           );

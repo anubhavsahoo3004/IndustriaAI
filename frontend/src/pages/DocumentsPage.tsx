@@ -3,15 +3,11 @@ import {
   FolderOpen,
   Upload,
   FileText,
-  Sparkles,
-  CheckCircle2,
+  CheckCircle,
   AlertTriangle,
-  FileCheck2,
-  Download,
   Search,
-  Filter,
-  Eye,
-  Info
+  Check,
+  X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { DocumentService } from '../services/document.service';
@@ -79,7 +75,7 @@ export const DocumentsPage: React.FC = () => {
       await fetchDocuments();
       const updatedDoc = documents.find((d) => d.id === docId);
       if (updatedDoc) {
-        setSelectedDoc({ ...updatedDoc, validation_result: res });
+        setSelectedDoc({ ...updatedDoc, validation_result: res, status: res.status });
       }
     } catch (err) {
       console.error('Revalidation failed:', err);
@@ -96,331 +92,225 @@ export const DocumentsPage: React.FC = () => {
     );
   });
 
+  const verifiedCount = documents.filter((d) => d.status === 'VERIFIED').length;
+  const mismatchCount = documents.filter((d) => d.status === 'ACTION_REQUIRED').length;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-              Document Management & AI Completeness Checks
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+              Document Management & Statutory Checks
             </h1>
-            <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 font-bold px-2.5 py-0.5 rounded-full">
-              {documents.length} Files
+            <span className="text-xs bg-slate-100 text-slate-700 border border-slate-200 font-semibold px-2 py-0.5 rounded">
+              {documents.length} Uploaded
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Upload statutory documents to run automatic entity consistency, jurisdiction, and structural completeness checks.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Administrative verification tool for entity consistency, PAN, GSTIN, and statutory completeness.
           </p>
         </div>
 
         <button
           onClick={() => setShowUploadModal(true)}
-          className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-500/20 transition-all flex items-center gap-2 self-start sm:self-auto"
+          className="px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
         >
-          <Upload className="w-4 h-4" />
-          Upload New Document
+          <Upload className="w-3.5 h-3.5" /> Upload Document
         </button>
       </div>
 
-      {/* Search & Info Banner */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
-        <div className="lg:col-span-4 relative">
-          <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search documents by name or type..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
-          />
+      {/* Summary KPI Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white border border-slate-200 rounded-md p-3">
+          <span className="text-[10px] text-slate-500 uppercase font-medium block">Total Documents</span>
+          <span className="text-lg font-bold text-slate-900 mt-0.5 block">{documents.length}</span>
         </div>
-
-        <div className="lg:col-span-8 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl p-3 text-xs text-blue-900 dark:text-blue-200 flex items-center gap-2.5">
-          <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
-          <span>
-            <strong>AI Completeness Verification:</strong> Uploaded files are checked against your business profile (<strong>{activeBusiness?.name}</strong>) for name consistency, PAN/GSTIN alignment, and required technical annexures.
+        <div className="bg-white border border-slate-200 rounded-md p-3">
+          <span className="text-[10px] text-slate-500 uppercase font-medium block">Verified & Consistent</span>
+          <span className="text-lg font-bold text-emerald-700 mt-0.5 block">{verifiedCount}</span>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-md p-3">
+          <span className="text-[10px] text-slate-500 uppercase font-medium block">Mismatch Detected</span>
+          <span className="text-lg font-bold text-amber-700 mt-0.5 block">{mismatchCount}</span>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-md p-3">
+          <span className="text-[10px] text-slate-500 uppercase font-medium block">Associated Business</span>
+          <span className="text-xs font-semibold text-slate-800 mt-1 block truncate" title={activeBusiness?.name}>
+            {activeBusiness?.name || 'Maharashtra Fresh Foods'}
           </span>
         </div>
       </div>
 
-      {/* Documents Grid / Table */}
+      {/* Search Input */}
+      <div className="bg-white border border-slate-200 rounded-md p-2.5 shadow-xs flex items-center gap-2">
+        <Search className="w-3.5 h-3.5 text-slate-400 ml-1" />
+        <input
+          type="text"
+          placeholder="Filter by document type, filename, or verification notes..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full text-xs text-slate-900 placeholder-slate-400 focus:outline-none"
+        />
+      </div>
+
+      {/* Administrative Verification Table */}
       {loading ? (
         <div className="text-center py-12 text-xs text-slate-500">
           Loading document repository...
         </div>
       ) : filteredDocs.length === 0 ? (
-        <div className="text-center py-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 space-y-3">
+        <div className="text-center py-12 bg-white border border-slate-200 rounded-lg p-6 space-y-2">
           <FolderOpen className="w-8 h-8 text-slate-400 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">No documents found.</h3>
-          <p className="text-xs text-slate-400">Upload your DPR, building plans, or PAN card to get started.</p>
+          <h3 className="text-xs font-semibold text-slate-700">No documents found.</h3>
+          <p className="text-[11px] text-slate-500">Upload mandatory statutory documents for automated administrative verification.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredDocs.map((doc) => (
-            <div
-              key={doc.id}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
-            >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600">
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block font-mono">
-                        {doc.document_type}
-                      </span>
-                      <h3 className="font-bold text-xs text-slate-900 dark:text-white truncate max-w-[180px]">
-                        {doc.original_filename}
-                      </h3>
-                    </div>
-                  </div>
-                  <StatusBadge status={doc.status} />
-                </div>
+        <div className="bg-white border border-slate-200 rounded-lg shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-[11px]">
+                <tr>
+                  <th className="py-2.5 px-3">Document</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3">Verification Summary</th>
+                  <th className="py-2.5 px-3">Mismatch Check</th>
+                  <th className="py-2.5 px-3">Uploaded Date</th>
+                  <th className="py-2.5 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredDocs.map((doc) => {
+                  const isVerified = doc.status === 'VERIFIED';
+                  const isMismatch = doc.status === 'ACTION_REQUIRED';
 
-                {/* Validation Summary Snippet */}
-                {doc.validation_result ? (
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-[11px] space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-                        {doc.status === 'VERIFIED' ? (
-                          <span className="text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wider text-[10px]">
-                            VERIFIED
+                  return (
+                    <tr key={doc.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                          <div>
+                            <span className="font-semibold text-slate-900 block">
+                              {doc.document_type.replace(/_/g, ' ')}
+                            </span>
+                            <span className="font-mono text-[11px] text-slate-500 block">
+                              {doc.original_filename} ({Math.round(doc.file_size_bytes / 1024)} KB)
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-3">
+                        <StatusBadge status={doc.status} />
+                      </td>
+
+                      <td className="py-3 px-3 max-w-xs">
+                        <p className="text-slate-600 line-clamp-2 text-[11px]">
+                          {doc.ai_summary || 'Standard validation checks completed.'}
+                        </p>
+                      </td>
+
+                      <td className="py-3 px-3">
+                        {isVerified ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-800">
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            Verified Consistent
+                          </span>
+                        ) : isMismatch ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-800">
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                            Mismatch Detected
                           </span>
                         ) : (
-                          <span className="text-amber-700 dark:text-amber-400 font-bold uppercase tracking-wider text-[10px]">
-                            ACTION REQUIRED
+                          <span className="text-[11px] text-slate-500">
+                            Pending Verification
                           </span>
                         )}
-                      </span>
-                      <strong className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">
-                        {doc.validation_result.checks_summary ||
-                          `${doc.validation_result.checks?.filter((c: any) => c.result === 'MATCH' || c.result === 'PASSED').length || 5}/${doc.validation_result.checks?.length || 5} checks passed`}
-                      </strong>
-                    </div>
-                    <p className="text-slate-500 dark:text-slate-400 line-clamp-2">
-                      {doc.validation_result.summary}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-slate-400 italic">
-                    File uploaded; click run completeness check to analyze.
-                  </p>
-                )}
+                      </td>
 
-                <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1">
-                  <span>
-                    Demo Document • {(Math.max(1420, doc.file_size_bytes || 1420) / 1024).toFixed(1)} KB ({doc.file_type})
-                  </span>
-                  <span>{new Date(doc.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
-                </div>
-              </div>
+                      <td className="py-3 px-3 text-slate-500 font-mono text-[11px]">
+                        {new Date(doc.created_at).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </td>
 
-              {/* Action Buttons */}
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                <button
-                  onClick={() => setSelectedDoc(doc)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1"
-                >
-                  <Eye className="w-3.5 h-3.5" /> View Report
-                </button>
-
-                <button
-                  onClick={() => handleRevalidate(doc.id)}
-                  disabled={validatingId === doc.id}
-                  className="px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 text-xs font-bold flex items-center gap-1"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  {validatingId === doc.id ? 'Checking...' : 'Re-verify'}
-                </button>
-              </div>
-            </div>
-          ))}
+                      <td className="py-3 px-3 text-right space-x-1.5 whitespace-nowrap">
+                        <button
+                          onClick={() => setSelectedDoc(doc)}
+                          className="px-2 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium cursor-pointer"
+                        >
+                          Report
+                        </button>
+                        <button
+                          onClick={() => handleRevalidate(doc.id)}
+                          disabled={validatingId === doc.id}
+                          className="px-2 py-0.5 rounded border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs font-medium cursor-pointer"
+                        >
+                          {validatingId === doc.id ? 'Checking...' : 'Re-verify'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* Upload Document Modal */}
-      <Modal
-        isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        title="Upload Compliance Document"
-        subtitle={`Upload file for ${activeBusiness?.name}`}
-      >
-        <form onSubmit={handleUpload} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Document Classification *
-            </label>
-            <select
-              value={docType}
-              onChange={(e) => setDocType(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-semibold"
-            >
-              <option value="PROJECT_REPORT_DPR">Detailed Project Report (DPR) / Process Flow</option>
-              <option value="POLLUTION_CONTROL_SCHEME">Pollution Control Scheme / ETP Design (MPCB)</option>
-              <option value="FIRE_SAFETY_PLAN">Fire Hydrant & Evacuation Drawings (MIDC Fire)</option>
-              <option value="LAND_TITLE_7_12_EXTRACT">7/12 Land Title Extract / MIDC Allotment</option>
-              <option value="WATER_BALANCE_SHEET">Water Balance Sheet & Flow Diagram</option>
-              <option value="ELECTRICITY_LOAD_SANCTION">Electrical Single Line Diagram (SLD)</option>
-              <option value="FACTORY_BUILDING_PLAN">Factory Architectural Layout (DISH)</option>
-              <option value="PAN_CARD">Company PAN Card</option>
-              <option value="UDYAM_REGISTRATION">Udyam MSME Registration Certificate</option>
-              <option value="FSSAI_FOOD_SAFETY_MANAGEMENT_PLAN">FSSAI Food Safety Plan (FSMS)</option>
-              <option value="BOILER_MANUFACTURER_CERT">Steam Boiler Maker Certificate</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Select Document File (PDF, DOCX, TXT, PNG/JPG) *
-            </label>
-            <input
-              type="file"
-              required
-              accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg"
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  setFile(e.target.files[0]);
-                }
-              }}
-              className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-            />
-          </div>
-
-          <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl text-blue-800 dark:text-blue-300 text-[11px] leading-relaxed">
-            <strong>Automated Analysis:</strong> The system extracts text content and evaluates match consistency with registered profile name, district, and required statutory sections.
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setShowUploadModal(false)}
-              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={uploading || !file}
-              className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-500/20 disabled:opacity-50"
-            >
-              {uploading ? 'Processing...' : 'Upload & Analyze'}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Document Validation Report Modal */}
-      {selectedDoc && selectedDoc.validation_result && (
+      {/* Verification Details Modal */}
+      {selectedDoc && (
         <Modal
           isOpen={true}
           onClose={() => setSelectedDoc(null)}
-          title="Document Completeness & Consistency Report"
-          subtitle={`${selectedDoc.original_filename} (${selectedDoc.document_type})`}
+          title="Administrative Document Verification Report"
+          subtitle={`Dossier Check: ${selectedDoc.document_type.replace(/_/g, ' ')} (${selectedDoc.original_filename})`}
         >
           <div className="space-y-4 text-xs">
-            {/* Summary Metrics Banner */}
-            <div className="grid grid-cols-3 gap-2 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Overall Status</span>
-                <StatusBadge status={selectedDoc.validation_result.status} />
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Checks Performed</span>
-                <strong className="text-slate-900 dark:text-white font-mono font-bold text-sm">
-                  {selectedDoc.validation_result.passed_checks ?? (selectedDoc.validation_result.checks?.filter((c: any) => c.result === 'MATCH' || c.result === 'PASSED').length || 5)} / {selectedDoc.validation_result.total_checks ?? (selectedDoc.validation_result.checks?.length || 5)} Passed
-                </strong>
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">File Identification</span>
-                <span className="text-[11px] font-mono text-slate-700 dark:text-slate-300 font-semibold block truncate">
-                  {(Math.max(1420, selectedDoc.file_size_bytes || 1420) / 1024).toFixed(1)} KB ({selectedDoc.file_type})
-                </span>
-              </div>
+            <div className="flex items-center justify-between p-3 rounded bg-slate-50 border border-slate-200">
+              <span className="font-semibold text-slate-800">Compliance Status</span>
+              <StatusBadge status={selectedDoc.status} />
             </div>
 
-            {/* Profile Values Compared Table */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="font-bold text-slate-900 dark:text-white">Profile Values Compared vs Extracted Entities:</h4>
-                <span className="text-[10px] text-slate-400 font-mono">Entity: {activeBusiness?.name}</span>
-              </div>
-
-              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
-                <table className="w-full text-left text-xs divide-y divide-slate-100 dark:divide-slate-800">
-                  <thead className="bg-slate-50 dark:bg-slate-800/80 text-[10px] uppercase font-bold text-slate-400">
-                    <tr>
-                      <th className="py-2.5 px-3">Check Item</th>
-                      <th className="py-2.5 px-3">Registered Profile Value</th>
-                      <th className="py-2.5 px-3">Document Extracted Value</th>
-                      <th className="py-2.5 px-3 text-right">Result</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {(selectedDoc.validation_result.entity_comparisons || selectedDoc.validation_result.checks || []).map((row: any, rIdx: number) => {
-                      const itemLabel = row.check_item || row.item;
-                      const profileVal = row.profile_value || (itemLabel?.includes('Name') ? activeBusiness?.name : (itemLabel?.includes('Location') ? 'Pune, Maharashtra' : 'Statutory Spec'));
-                      const extractedVal = row.extracted_value || (row.details || 'Detected in file');
-                      const matchStatus = row.status || row.result || 'MATCH';
-
-                      return (
-                        <tr key={rIdx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                          <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-slate-200">
-                            {itemLabel}
-                          </td>
-                          <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 font-mono text-[11px]">
-                            {profileVal}
-                          </td>
-                          <td className="py-2.5 px-3 text-slate-700 dark:text-slate-200 font-mono text-[11px]">
-                            {extractedVal}
-                          </td>
-                          <td className="py-2.5 px-3 text-right">
-                            <StatusBadge status={matchStatus} />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-semibold text-slate-500 uppercase block">Verification Summary:</span>
+              <p className="p-3 bg-slate-50 rounded border border-slate-200 text-slate-800 leading-relaxed">
+                {selectedDoc.ai_summary || 'All statutory checks passed against registered business profile.'}
+              </p>
             </div>
 
-            {/* Detailed Checks Breakdown */}
-            <div className="space-y-2">
-              <h4 className="font-bold text-slate-900 dark:text-white">Validation Diagnostics:</h4>
-              <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                {selectedDoc.validation_result.checks?.map((c: any, i: number) => (
-                  <div key={i} className="p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex items-start justify-between gap-3 text-[11px]">
-                    <div>
-                      <span className="font-bold text-slate-800 dark:text-slate-200 block">{c.item}</span>
-                      <p className="text-slate-500 mt-0.5 leading-relaxed">{c.details}</p>
+            {selectedDoc.validation_result?.checks && (
+              <div className="space-y-1">
+                <span className="text-[10px] font-semibold text-slate-500 uppercase block">Specific Verification Checks:</span>
+                <div className="border border-slate-200 rounded divide-y divide-slate-100">
+                  {selectedDoc.validation_result.checks.map((c: any, i: number) => (
+                    <div key={i} className="p-2.5 flex items-start justify-between gap-2">
+                      <div className="space-y-0.5">
+                        <span className="font-medium text-slate-900 block">{c.check_name}</span>
+                        <span className="text-[11px] text-slate-500 block">{c.details}</span>
+                      </div>
+                      <span
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded border shrink-0 ${
+                          c.status === 'MATCH' || c.status === 'PASSED'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : 'bg-amber-50 text-amber-800 border-amber-200'
+                        }`}
+                      >
+                        {c.status}
+                      </span>
                     </div>
-                    <StatusBadge status={c.result} />
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl text-blue-900 dark:text-blue-200 space-y-1">
-              <strong className="block font-bold">Executive Summary:</strong>
-              <p className="text-[11px] leading-relaxed">{selectedDoc.validation_result.summary}</p>
-            </div>
-
-            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl text-emerald-900 dark:text-emerald-200 space-y-1">
-              <strong className="block font-bold">Recommended Next Step:</strong>
-              <p className="text-[11px] leading-relaxed">{selectedDoc.validation_result.recommended_action}</p>
-            </div>
-
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-              <span className="text-[10px] text-slate-400 italic">
-                Demo placeholder document generated for SIH26130 single window evaluation.
-              </span>
+            <div className="flex justify-end pt-2 border-t border-slate-200">
               <button
                 onClick={() => setSelectedDoc(null)}
-                className="px-5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold"
+                className="px-3.5 py-1.5 rounded-md bg-slate-900 text-white text-xs font-semibold cursor-pointer"
               >
                 Close Report
               </button>
@@ -428,6 +318,66 @@ export const DocumentsPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Upload Modal */}
+      <Modal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        title="Upload Statutory Document"
+        subtitle="Select document category and attachment file for administrative check"
+      >
+        <form onSubmit={handleUpload} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">
+              Document Category
+            </label>
+            <select
+              value={docType}
+              onChange={(e) => setDocType(e.target.value)}
+              className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-slate-500"
+            >
+              <option value="PROJECT_REPORT_DPR">Detailed Project Report (DPR)</option>
+              <option value="LAND_TITLE_DEED">Land Title / MIDC Lease Agreement</option>
+              <option value="SITE_PLAN">Factory Site & Machinery Layout Blueprint</option>
+              <option value="PAN_CARD">Permanent Account Number (PAN) Card</option>
+              <option value="GST_CERTIFICATE">GST Registration Certificate</option>
+              <option value="UDYAM_MSME">Udyam / MSME Registration</option>
+              <option value="FSMS_PLAN">Food Safety Management System (FSMS) Plan</option>
+              <option value="WATER_ANALYSIS_REPORT">NABL Potable Water Chemical Analysis Report</option>
+              <option value="OTHER_SUPPORTING">Other Supporting Regulatory Document</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">
+              Select Document File (.pdf, .txt, .docx, .png, .jpg)
+            </label>
+            <input
+              type="file"
+              required
+              onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
+              className="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-slate-300 file:text-xs file:font-medium file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100 cursor-pointer"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={() => setShowUploadModal(false)}
+              className="px-3 py-1.5 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={uploading || !file}
+              className="px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold disabled:opacity-50 cursor-pointer"
+            >
+              {uploading ? 'Analyzing Document...' : 'Upload & Verify'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

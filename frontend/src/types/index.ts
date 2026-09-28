@@ -209,6 +209,7 @@ export interface ApplicationItem {
   application_documents?: ApplicationDocumentItem[];
   required_manifest?: Array<{ doc_type: string; name: string; mandatory: boolean }>;
   missing_mandatory_documents?: string[];
+  inspections?: InspectionItem[];
 }
 
 export interface InspectionItem {

@@ -9,18 +9,15 @@ import {
   ShieldAlert,
   CalendarCheck,
   ClipboardList,
-  Sparkles,
   ArrowRight,
-  Upload,
   ChevronRight,
-  ExternalLink,
   MapPin,
-  Flame,
   Zap,
   Droplets,
-  Users
+  Users,
+  HelpCircle
 } from 'lucide-react';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
 import { ApplicationService } from '../services/application.service';
 import { InspectionService } from '../services/inspection.service';
@@ -34,11 +31,12 @@ import { RiskBadge } from '../components/common/RiskBadge';
 const STATUS_PIE_COLORS: Record<string, string> = {
   APPROVED: '#10b981',
   COMPLETED: '#059669',
-  UNDER_REVIEW: '#6366f1',
-  INSPECTION_PENDING: '#8b5cf6',
+  UNDER_REVIEW: '#64748b',
+  INSPECTION_PENDING: '#94a3b8',
   DOCUMENTS_REQUIRED: '#f59e0b',
-  ACTION_REQUIRED: '#f97316',
+  ACTION_REQUIRED: '#d97706',
   SUBMITTED: '#3b82f6',
+  REJECTED: '#ef4444',
 };
 
 export const DashboardPage: React.FC = () => {
@@ -81,10 +79,10 @@ export const DashboardPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center space-y-3">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-xs text-slate-500 font-medium">Loading Industrial Intelligence Dashboard...</p>
+      <div className="flex items-center justify-center min-h-[360px]">
+        <div className="text-center space-y-2.5">
+          <div className="w-7 h-7 border-2 border-slate-300 border-t-slate-800 rounded-full animate-spin mx-auto"></div>
+          <p className="text-xs text-slate-500 font-medium">Loading Dashboard Data...</p>
         </div>
       </div>
     );
@@ -104,9 +102,9 @@ export const DashboardPage: React.FC = () => {
   const completedApps = analytics ? analytics.completed_applications : applications.filter((a) => a.status === 'APPROVED' || a.status === 'COMPLETED').length;
   const underReviewApps = analytics ? analytics.under_review_applications : applications.filter((a) => a.status === 'UNDER_REVIEW' || a.status === 'INSPECTION_PENDING').length;
   const actionReqApps = analytics ? analytics.action_required_applications : actionRequiredList.length;
-  const nearSlaApps = analytics ? (analytics.delayed_applications + analytics.near_sla_applications) : applications.filter((a) => (a.delay_risk_level === 'HIGH' || a.delay_risk_level === 'MEDIUM') && !(a.status === 'APPROVED' || a.status === 'COMPLETED')).length;
+  const highRiskApps = analytics ? analytics.delayed_applications : applications.filter((a) => a.delay_risk_level === 'HIGH' && !(a.status === 'APPROVED' || a.status === 'COMPLETED')).length;
 
-  // Canonical Donut Chart Data: Every single application belongs to a displayed category
+  // Canonical Donut Chart Data
   const pieChartData = (() => {
     const counts: Record<string, number> = {};
     applications.forEach((a) => {
@@ -122,103 +120,82 @@ export const DashboardPage: React.FC = () => {
   })();
 
   const chartTotal = pieChartData.reduce((acc, curr) => acc + curr.value, 0);
-
-  const barChartData = analytics?.stage_breakdown && analytics.stage_breakdown.length > 0
-    ? analytics.stage_breakdown.map((item) => ({
-        stage: item.stage,
-        count: item.count,
-      }))
-    : (() => {
-        const stageCounts: Record<string, number> = {};
-        applications.forEach((a) => {
-          stageCounts[a.current_stage] = (stageCounts[a.current_stage] || 0) + 1;
-        });
-        return Object.entries(stageCounts).map(([stage, count]) => ({
-          stage: stage.replace(/_/g, ' '),
-          count,
-        }));
-      })();
-
   const upcomingInspections = inspections.filter((i) => i.status === 'SCHEDULED');
 
   return (
-    <div className="space-y-6">
-      {/* Top Business Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 rounded-2xl p-6 sm:p-8 text-white shadow-xl border border-slate-700/50">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2">
+    <div className="space-y-5">
+      {/* Top Business Profile Header Card */}
+      <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="text-xs uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                Active Industrial Unit
+              <span className="text-[10px] uppercase font-semibold tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                Registered Industrial Unit
               </span>
-              <span className="text-xs text-slate-400 font-mono">
+              <span className="text-xs text-slate-500 font-mono">
                 MIDC Industrial Zone
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
               {activeBusiness?.name || 'Maharashtra Fresh Foods Pvt. Ltd.'}
             </h1>
-            <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs text-slate-300">
+            <div className="flex flex-wrap items-center gap-y-1.5 gap-x-4 text-xs text-slate-600">
               <span className="flex items-center gap-1.5">
-                <Building2 className="w-4 h-4 text-blue-400" />
+                <Building2 className="w-3.5 h-3.5 text-slate-400" />
                 {activeBusiness?.industry} ({activeBusiness?.scale} Scale)
               </span>
               <span className="flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-emerald-400" />
+                <MapPin className="w-3.5 h-3.5 text-slate-400" />
                 {activeBusiness?.district}, {activeBusiness?.state}
               </span>
               <span className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-purple-400" />
+                <Users className="w-3.5 h-3.5 text-slate-400" />
                 {activeBusiness?.employee_count || 45} Workers
               </span>
               <span className="flex items-center gap-1.5">
-                <Zap className="w-4 h-4 text-amber-400" />
+                <Zap className="w-3.5 h-3.5 text-slate-400" />
                 {activeBusiness?.electricity_load_kw || 350} kW Load
               </span>
               <span className="flex items-center gap-1.5">
-                <Droplets className="w-4 h-4 text-cyan-400" />
+                <Droplets className="w-3.5 h-3.5 text-slate-400" />
                 {activeBusiness?.water_requirement_kld || 45} KLD Water
               </span>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <Link
               to="/approvals"
-              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
+              className="px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors flex items-center gap-1.5"
             >
-              <FileCheck2 className="w-4 h-4" />
-              View Approval Plan
+              <FileCheck2 className="w-3.5 h-3.5" />
+              Approval Plan
             </Link>
             <Link
               to="/ai-assistant"
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-bold transition-all flex items-center gap-2"
+              className="px-3.5 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors flex items-center gap-1.5"
             >
-              <Sparkles className="w-4 h-4 text-blue-400" />
-              Ask AI Assistant
+              <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
+              Compliance Assistant
             </Link>
           </div>
         </div>
       </div>
 
-      {/* 5 Core Metrics Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      {/* 5 Enterprise KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
         <StatCard
-          title="Total Clearances"
+          title="Applications"
           value={totalApps}
-          subtitle="Tracked applications"
+          subtitle="Tracked in portal"
           icon={FileCheck2}
-          iconColor="text-blue-600"
-          bgColor="bg-blue-50 dark:bg-blue-950/30"
           onClick={() => navigate('/applications')}
         />
         <StatCard
-          title="Approved & Granted"
+          title="Approved"
           value={completedApps}
-          subtitle="Clearance Active (Completed)"
+          subtitle="Clearances active"
           icon={CheckCircle2}
-          iconColor="text-emerald-600"
-          bgColor="bg-emerald-50 dark:bg-emerald-950/30"
           badge={{ text: `${Math.round((completedApps / Math.max(1, totalApps)) * 100)}% Granted`, variant: 'positive' }}
           onClick={() => navigate('/applications?status=APPROVED')}
         />
@@ -227,46 +204,38 @@ export const DashboardPage: React.FC = () => {
           value={underReviewApps}
           subtitle="Department scrutiny"
           icon={Clock}
-          iconColor="text-indigo-600"
-          bgColor="bg-indigo-50 dark:bg-indigo-950/30"
           onClick={() => navigate('/applications?status=UNDER_REVIEW')}
         />
         <StatCard
           title="Action Required"
           value={actionReqApps}
-          subtitle="Applicant response needed"
+          subtitle="Response needed"
           icon={AlertTriangle}
-          iconColor="text-amber-600"
-          bgColor="bg-amber-50 dark:bg-amber-950/30"
-          badge={{ text: `${actionReqApps} Need Action`, variant: 'warning' }}
+          badge={{ text: `${actionReqApps} Action Pending`, variant: 'warning' }}
           onClick={() => navigate('/applications?filter=ACTION_REQUIRED')}
         />
         <StatCard
-          title="Near / Delayed SLA"
-          value={nearSlaApps}
-          subtitle="Delayed (>100% SLA) or ≤5d"
+          title="High Delay Risk"
+          value={highRiskApps}
+          subtitle="SLA exceeded benchmark"
           icon={ShieldAlert}
-          iconColor="text-rose-600"
-          bgColor="bg-rose-50 dark:bg-rose-950/30"
-          badge={{ text: `${nearSlaApps} Monitored`, variant: 'danger' }}
-          onClick={() => navigate('/applications?delay_risk=MONITORED')}
+          badge={{ text: `${highRiskApps} Critical`, variant: 'danger' }}
+          onClick={() => navigate('/applications?delay_risk=HIGH')}
         />
       </div>
 
-      {/* Urgent Action Banner if any actions or SLA delay */}
+      {/* Urgent Action Banner */}
       {actionRequiredList.length > 0 && (
-        <div className="bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 rounded-2xl p-5 shadow-sm space-y-3">
-          <div className="flex items-center justify-between border-b border-amber-200/60 dark:border-amber-900/40 pb-2">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-amber-200/80 pb-2">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-amber-500 text-white rounded-lg">
-                <AlertTriangle className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-sm text-slate-900 dark:text-amber-200">
-                Immediate Action Required for {actionRequiredList.length} Clearance(s)
+              <AlertTriangle className="w-4 h-4 text-amber-700 flex-shrink-0" />
+              <h3 className="font-semibold text-xs text-amber-900">
+                Action Required ({actionRequiredList.length} application{actionRequiredList.length > 1 ? 's' : ''})
               </h3>
             </div>
-            <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 rounded-full">
-              {actionRequiredList.length} Actions Pending
+            <span className="text-[11px] font-medium text-amber-800 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded">
+              Pending Applicant Input
             </span>
           </div>
 
@@ -274,34 +243,34 @@ export const DashboardPage: React.FC = () => {
             {actionRequiredList.map((app) => {
               const isMissingDocs = app.status === 'DOCUMENTS_REQUIRED';
               const ctaText = isMissingDocs
-                ? 'Review & Upload Documents'
-                : (app.delay_risk_level === 'HIGH' ? 'Address Scrutiny Memo' : 'Review Application');
+                ? 'Upload Documents'
+                : (app.delay_risk_level === 'HIGH' ? 'Review Scrutiny Memo' : 'Review Application');
               return (
                 <div
                   key={app.id}
-                  className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-amber-200/80 dark:border-amber-900/50 flex flex-col justify-between gap-3 shadow-xs"
+                  className="bg-white p-3.5 rounded-md border border-amber-200 flex flex-col justify-between gap-2.5"
                 >
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <div className="flex items-start justify-between gap-2">
-                      <span className="font-bold text-xs text-slate-900 dark:text-white line-clamp-1">
+                      <span className="font-semibold text-xs text-slate-900 line-clamp-1">
                         {app.approval_type?.name}
                       </span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold whitespace-nowrap">
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-semibold whitespace-nowrap">
                         {app.application_number}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300">
-                      <span className="font-semibold text-amber-700 dark:text-amber-400">Required Action:</span>{' '}
+                    <p className="text-xs text-slate-600">
+                      <span className="font-medium text-amber-800">Pending:</span>{' '}
                       {app.next_action_prompt || 'Action required from applicant to resume departmental scrutiny.'}
                     </p>
                   </div>
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <span className="text-[11px] text-slate-500 font-medium">
-                      {isMissingDocs ? 'Status: Documents Required' : `SLA Delay Risk: ${app.delay_risk_level}`}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                    <span className="text-slate-500 text-[11px]">
+                      {isMissingDocs ? 'Documents Required' : `SLA Delay Risk: ${app.delay_risk_level}`}
                     </span>
                     <Link
                       to={`/applications/${app.id}`}
-                      className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-xs transition-all flex items-center gap-1"
+                      className="px-2.5 py-1 rounded bg-amber-700 hover:bg-amber-800 text-white text-xs font-medium transition-colors inline-flex items-center gap-1"
                     >
                       {ctaText} <ArrowRight className="w-3 h-3" />
                     </Link>
@@ -313,29 +282,28 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Two Column Layout: Charts & Timeline Widgets */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Applications & Bottleneck Charts (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
-          {/* Applications by Status & Stage */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
+      {/* Two Column Section: Status Distribution & Schedule */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Left: Applications Status Distribution (7 cols) */}
+        <div className="lg:col-span-7 space-y-5">
+          <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3.5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
               <div>
-                <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                <h3 className="font-semibold text-xs text-slate-900">
                   Compliance Portfolio Overview
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-[11px] text-slate-500">
                   Status distribution across Maharashtra statutory bodies
                 </p>
               </div>
-              <Link to="/applications" className="text-xs text-blue-600 font-semibold hover:underline flex items-center gap-1">
-                View All <ChevronRight className="w-3.5 h-3.5" />
+              <Link to="/applications" className="text-xs text-slate-600 hover:text-slate-900 font-medium flex items-center gap-1">
+                View All <ChevronRight className="w-3 h-3" />
               </Link>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
               {/* Pie Chart */}
-              <div className="h-48 relative flex items-center justify-center">
+              <div className="h-44 relative flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -344,9 +312,9 @@ export const DashboardPage: React.FC = () => {
                       nameKey="name"
                       cx="50%"
                       cy="50%"
-                      innerRadius={48}
-                      outerRadius={72}
-                      paddingAngle={3}
+                      innerRadius={44}
+                      outerRadius={68}
+                      paddingAngle={2}
                     >
                       {pieChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -357,84 +325,83 @@ export const DashboardPage: React.FC = () => {
                 </ResponsiveContainer>
                 {/* Center Donut Label */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">
+                  <span className="text-xl font-bold text-slate-900 leading-none">
                     {chartTotal}
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
+                  <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mt-0.5">
                     Clearances
                   </span>
                 </div>
               </div>
 
-              {/* Status Legend */}
-              <div className="space-y-1.5 text-xs">
+              {/* Status Legend Table */}
+              <div className="space-y-1 text-xs">
                 {pieChartData.map((item) => (
-                  <div key={item.name} className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
+                  <div key={item.name} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-slate-600 dark:text-slate-300 capitalize">{item.name}</span>
+                      <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: item.color }} />
+                      <span className="text-slate-700 capitalize">{item.name}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-slate-900 dark:text-white">{item.value}</span>
-                      <span className="text-[10px] text-slate-400 font-mono">
+                      <span className="font-semibold text-slate-900">{item.value}</span>
+                      <span className="text-[10px] text-slate-500 font-mono">
                         ({Math.round((item.value / Math.max(1, chartTotal)) * 100)}%)
                       </span>
                     </div>
                   </div>
                 ))}
-                {/* Total Portfolio Verification Row */}
-                <div className="flex items-center justify-between pt-1.5 mt-1 border-t-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-xs">
-                  <span>Total Applications</span>
-                  <span>{chartTotal} Clearances (100%)</span>
+                <div className="flex items-center justify-between pt-1 mt-1 border-t border-slate-200 text-slate-900 font-semibold text-xs">
+                  <span>Total Portfolio</span>
+                  <span>{chartTotal} Applications (100%)</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Recently Updated Applications Table */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <div>
-                <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                <h3 className="font-semibold text-xs text-slate-900">
                   Recently Updated Applications
                 </h3>
-                <p className="text-xs text-slate-500">Live statutory status and SLA risk ratings</p>
+                <p className="text-[11px] text-slate-500">Live statutory status and SLA risk ratings</p>
               </div>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase text-[10px]">
+                <thead className="border-b border-slate-200 bg-slate-50/50 text-slate-600 text-[11px] font-semibold">
                   <tr>
-                    <th className="pb-2.5 font-bold">Clearance / Dept</th>
-                    <th className="pb-2.5 font-bold">App Number</th>
-                    <th className="pb-2.5 font-bold">Status</th>
-                    <th className="pb-2.5 font-bold">Delay Risk</th>
-                    <th className="pb-2.5 font-bold text-right">Action</th>
+                    <th className="py-2 px-2.5">Clearance / Dept</th>
+                    <th className="py-2 px-2.5">App Number</th>
+                    <th className="py-2 px-2.5">Status</th>
+                    <th className="py-2 px-2.5">Delay Risk</th>
+                    <th className="py-2 px-2.5 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody className="divide-y divide-slate-100">
                   {applications.slice(0, 5).map((app) => (
-                    <tr key={app.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="py-3 font-semibold text-slate-900 dark:text-slate-100">
+                    <tr key={app.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-2.5 px-2.5 font-medium text-slate-900">
                         {app.approval_type?.name}
-                        <span className="block text-[10px] text-slate-400 font-normal">
+                        <span className="block text-[10px] text-slate-500 font-normal">
                           {app.approval_type?.issuing_authority}
                         </span>
                       </td>
-                      <td className="py-3 font-mono text-[11px] text-slate-600 dark:text-slate-400">
+                      <td className="py-2.5 px-2.5 font-mono text-[11px] text-slate-600">
                         {app.application_number}
                       </td>
-                      <td className="py-3">
+                      <td className="py-2.5 px-2.5">
                         <StatusBadge status={app.status} />
                       </td>
-                      <td className="py-3">
+                      <td className="py-2.5 px-2.5">
                         <RiskBadge level={app.delay_risk_level} showLabel={false} />
                       </td>
-                      <td className="py-3 text-right">
+                      <td className="py-2.5 px-2.5 text-right">
                         <Link
                           to={`/applications/${app.id}`}
-                          className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 font-semibold inline-flex items-center gap-1"
+                          className="px-2 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1"
                         >
                           View <ChevronRight className="w-3 h-3" />
                         </Link>
@@ -448,22 +415,20 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Right: Upcoming Inspections & Recurring Compliance (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
+        <div className="lg:col-span-5 space-y-5">
           {/* Scheduled Inspections Card */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-600">
-                  <CalendarCheck className="w-4 h-4" />
-                </div>
+                <CalendarCheck className="w-4 h-4 text-slate-600" />
                 <div>
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                    Upcoming Inspections
+                  <h3 className="font-semibold text-xs text-slate-900">
+                    Scheduled Inspections
                   </h3>
-                  <p className="text-[11px] text-slate-400">Department officer site visits</p>
+                  <p className="text-[10px] text-slate-500">Department officer site visits</p>
                 </div>
               </div>
-              <Link to="/inspections" className="text-xs text-blue-600 font-semibold hover:underline">
+              <Link to="/inspections" className="text-xs text-slate-600 hover:text-slate-900 font-medium">
                 View All
               </Link>
             </div>
@@ -473,29 +438,29 @@ export const DashboardPage: React.FC = () => {
                 No field inspections scheduled currently.
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {upcomingInspections.map((insp) => (
                   <div
                     key={insp.id}
-                    className="p-3.5 rounded-xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40 space-y-2"
+                    className="p-3 rounded-md border border-slate-200 bg-slate-50/50 space-y-1.5"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h4 className="font-bold text-xs text-slate-900 dark:text-purple-200">
+                        <h4 className="font-semibold text-xs text-slate-900">
                           {insp.inspection_type}
                         </h4>
-                        <p className="text-[11px] text-slate-500">
-                          Officer: <strong className="text-slate-700 dark:text-slate-300">{insp.officer_name}</strong> ({insp.officer_designation})
+                        <p className="text-[11px] text-slate-600">
+                          Officer: <span className="font-medium text-slate-800">{insp.officer_name}</span> ({insp.officer_designation})
                         </p>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 whitespace-nowrap">
+                      <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-slate-200 text-slate-800 whitespace-nowrap">
                         {new Date(insp.scheduled_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} • {new Date(insp.scheduled_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
 
                     {insp.applicant_action_required && (
-                      <p className="text-[11px] text-slate-600 dark:text-slate-300 bg-white/80 dark:bg-slate-900/60 p-2 rounded-lg border border-purple-100/60 dark:border-purple-800/40">
-                        <strong>Action Needed:</strong> {insp.applicant_action_required}
+                      <p className="text-[11px] text-slate-600 bg-white p-2 rounded border border-slate-200">
+                        <strong className="text-slate-800">Action:</strong> {insp.applicant_action_required}
                       </p>
                     )}
                   </div>
@@ -504,42 +469,40 @@ export const DashboardPage: React.FC = () => {
             )}
           </div>
 
-          {/* Recurring Compliance Calendar Summary */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
+          {/* Statutory Compliance Calendar Summary */}
+          <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600">
-                  <ClipboardList className="w-4 h-4" />
-                </div>
+                <ClipboardList className="w-4 h-4 text-slate-600" />
                 <div>
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                  <h3 className="font-semibold text-xs text-slate-900">
                     Statutory Compliance Calendar
                   </h3>
-                  <p className="text-[11px] text-slate-400">Recurring filings & safety drills</p>
+                  <p className="text-[10px] text-slate-500">Recurring filings & returns</p>
                 </div>
               </div>
-              <Link to="/compliance" className="text-xs text-blue-600 font-semibold hover:underline">
+              <Link to="/compliance" className="text-xs text-slate-600 hover:text-slate-900 font-medium">
                 View Calendar
               </Link>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {complianceTasks.slice(0, 3).map((task) => (
                 <div
                   key={task.id}
-                  className="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-center justify-between gap-3"
+                  className="p-2.5 rounded-md border border-slate-200 bg-white flex items-center justify-between gap-3 text-xs"
                 >
-                  <div>
-                    <h4 className="font-bold text-xs text-slate-900 dark:text-white">
+                  <div className="space-y-0.5">
+                    <h4 className="font-medium text-slate-900">
                       {task.title}
                     </h4>
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[10px] text-slate-500">
                       {task.issuing_authority} • {task.frequency}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <StatusBadge status={task.status} />
-                    <span className="block text-[10px] text-slate-400 mt-1">
+                    <span className="block text-[10px] text-slate-500 mt-0.5 font-mono">
                       Due: {new Date(task.due_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                     </span>
                   </div>
