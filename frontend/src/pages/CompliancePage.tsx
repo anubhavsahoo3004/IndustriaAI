@@ -31,6 +31,7 @@ export const CompliancePage: React.FC = () => {
   const [newPenalty, setNewPenalty] = useState('');
   const [newInstructions, setNewInstructions] = useState('');
   const [creating, setCreating] = useState(false);
+  const [confirmModalTask, setConfirmModalTask] = useState<ComplianceTaskItem | null>(null);
 
   const fetchTasks = async () => {
     if (!activeBusiness) {
@@ -86,6 +87,7 @@ export const CompliancePage: React.FC = () => {
     const nextStatus = task.status === 'COMPLETED' ? 'UPCOMING' : 'COMPLETED';
     try {
       await ComplianceService.update(task.id, { status: nextStatus });
+      setConfirmModalTask(null);
       await fetchTasks();
     } catch (err) {
       console.error('Failed to update task:', err);
@@ -201,12 +203,33 @@ export const CompliancePage: React.FC = () => {
                     </div>
                   )}
 
+                  {task.source_reference && (
+                    <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
+                      <span>Ref: <strong className="text-slate-700 dark:text-slate-300">{task.source_reference}</strong></span>
+                      {task.source_url && (
+                        <a
+                          href={task.source_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-0.5 font-semibold"
+                        >
+                          Official Portal &rarr;
+                        </a>
+                      )}
+                    </div>
+                  )}
+
                   {task.penalty_risk_desc && (
-                    <div className="text-[11px] text-rose-700 dark:text-rose-300 p-2.5 rounded-xl bg-rose-50/60 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 flex items-start gap-1.5">
-                      <AlertCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <strong>Penalty Risk:</strong> {task.penalty_risk_desc}
+                    <div className="text-[11px] text-rose-700 dark:text-rose-300 p-2.5 rounded-xl bg-rose-50/60 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 space-y-1">
+                      <div className="flex items-start gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <strong>Indicative Penalty Risk:</strong> {task.penalty_risk_desc}
+                        </div>
                       </div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block pl-5 italic">
+                        Enforcement and actual penalties are determined by {task.issuing_authority} pursuant to applicable law.
+                      </span>
                     </div>
                   )}
                 </div>
@@ -217,7 +240,13 @@ export const CompliancePage: React.FC = () => {
                   </span>
 
                   <button
-                    onClick={() => handleToggleStatus(task)}
+                    onClick={() => {
+                      if (isCompleted) {
+                        handleToggleStatus(task);
+                      } else {
+                        setConfirmModalTask(task);
+                      }
+                    }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                       isCompleted
                         ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
@@ -225,7 +254,7 @@ export const CompliancePage: React.FC = () => {
                     }`}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    {isCompleted ? 'Mark Pending' : 'Mark Completed'}
+                    {isCompleted ? 'Mark Incomplete' : 'Mark Task Done'}
                   </button>
                 </div>
               </div>
@@ -364,6 +393,59 @@ export const CompliancePage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Mark Task Done Confirmation Modal */}
+      {confirmModalTask && (
+        <Modal
+          isOpen={true}
+          onClose={() => setConfirmModalTask(null)}
+          title="Confirm Internal Task Completion"
+          subtitle={confirmModalTask.title}
+        >
+          <div className="space-y-4 text-xs">
+            <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-900 dark:text-amber-200 space-y-2">
+              <div className="flex items-center gap-2 font-bold text-sm text-amber-800 dark:text-amber-300">
+                <ShieldCheck className="w-4 h-4 text-amber-600" />
+                Internal Workflow Recording Notice
+              </div>
+              <p className="leading-relaxed">
+                Marking this mandate as done records <strong>internal operational completion</strong> within IndustriaAI for your organization&apos;s compliance monitoring history.
+              </p>
+              <div className="pt-1 text-[11px] border-t border-amber-200/80 dark:border-amber-800/60">
+                <strong>Important Statutory Notice:</strong> This action records completion in IndustriaAI and <em>does not constitute an official statutory filing, submission receipt, or regulatory certification with {confirmModalTask.issuing_authority}</em>.
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">Authority</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{confirmModalTask.issuing_authority}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">Mandate Frequency</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{confirmModalTask.frequency}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModalTask(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleToggleStatus(confirmModalTask)}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md shadow-emerald-500/20"
+              >
+                Confirm & Mark Task Done
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

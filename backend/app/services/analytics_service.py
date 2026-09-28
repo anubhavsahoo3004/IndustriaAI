@@ -64,14 +64,22 @@ class AnalyticsService:
             st = app.status
             status_counts[st] = status_counts.get(st, 0) + 1
 
-            if st in ["SUBMITTED", "DOCUMENTS_REQUIRED"]:
-                pending_apps += 1
+            # INVARIANT: Completed/approved applications do not carry SLA delay risk and require no further action
+            is_terminal = app.status in TERMINAL_STATUSES or app.current_stage == WorkflowStage.COMPLETED.value
+
+            # Canonical Action Required condition: non-terminal and (missing docs, action required, or high SLA delay risk)
+            is_action_required = not is_terminal and (
+                st in ["DOCUMENTS_REQUIRED", "ACTION_REQUIRED"] or app.delay_risk_level == "HIGH"
+            )
+            if is_action_required:
+                action_req_apps += 1
+
+            if st in ["APPROVED", "COMPLETED"]:
+                completed_apps += 1
             elif st in ["UNDER_REVIEW", "INSPECTION_PENDING"]:
                 under_review_apps += 1
-            elif st == "ACTION_REQUIRED":
-                action_req_apps += 1
-            elif st in ["APPROVED", "COMPLETED"]:
-                completed_apps += 1
+            elif st == "SUBMITTED":
+                pending_apps += 1
 
             # Stage tally
             sg = app.current_stage or "DOC_VERIFICATION"
@@ -82,7 +90,6 @@ class AnalyticsService:
             industry_counts[ind] = industry_counts.get(ind, 0) + 1
 
             # SLA & Delay risk tally - INVARIANT: Completed/approved applications do not carry SLA delay risk
-            is_terminal = app.status in TERMINAL_STATUSES or app.current_stage == WorkflowStage.COMPLETED.value
             if not is_terminal:
                 if app.delay_risk_level == "HIGH":
                     delayed_apps += 1

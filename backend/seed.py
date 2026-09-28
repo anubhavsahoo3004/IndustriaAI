@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 # Ensure project root is in path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from backend.app.core.config import settings
 from backend.app.core.database import engine, Base, SessionLocal
 from backend.app.core.security import get_password_hash
 from backend.app.models import *
@@ -153,7 +154,7 @@ def seed_database():
     db.refresh(primary_business)
 
     print("Seeding Documents and Mock Files for Primary Business...")
-    uploads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+    uploads_dir = settings.UPLOAD_DIR
     os.makedirs(uploads_dir, exist_ok=True)
 
     demo_docs_config = [
@@ -173,6 +174,9 @@ def seed_database():
     for fname, dtype, title, text_content in demo_docs_config:
         fpath = os.path.join(uploads_dir, f"demo_{fname}")
         create_sample_file(fpath, text_content)
+        raw_bytes = len(text_content.encode("utf-8"))
+        # Realistic file size for demo documents (1.4 KB to 2.8 KB)
+        file_size_bytes = max(1420, raw_bytes * 3)
         
         doc = Document(
             business_id=primary_business.id,
@@ -181,20 +185,33 @@ def seed_database():
             original_filename=fname,
             file_path=fpath,
             file_type="TXT",
-            file_size_bytes=len(text_content.encode("utf-8")),
+            file_size_bytes=file_size_bytes,
             file_hash="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             document_type=dtype,
             status="VERIFIED",
             validation_result={
                 "status": "VERIFIED",
                 "document_type_detected": dtype,
-                "confidence_score": 0.96,
+                "confidence_score": 1.0,
+                "total_checks": 5,
+                "passed_checks": 5,
+                "failed_checks": 0,
+                "checks_summary": "5/5 checks passed",
                 "checks": [
-                    {"item": "Business Name Consistency", "result": "MATCH", "details": "Matched 'Maharashtra Fresh Foods Pvt. Ltd.'"},
-                    {"item": "Jurisdiction Check", "result": "MATCH", "details": "Matched Pune, Maharashtra"},
-                    {"item": "Document Structural Completeness", "result": "MATCH", "details": "Mandatory technical sections present"}
+                    {"item": "Business Legal Name Consistency", "result": "MATCH", "profile_value": "Maharashtra Fresh Foods Pvt. Ltd.", "extracted_value": "Maharashtra Fresh Foods Pvt. Ltd.", "details": "Verbatim match detected in document header and corporate declarations."},
+                    {"item": "Permanent Account Number (PAN)", "result": "MATCH", "profile_value": "AAACM4821K", "extracted_value": "AAACM4821K", "details": "PAN format validated and aligned with company registration."},
+                    {"item": "GSTIN / State Jurisdiction", "result": "MATCH", "profile_value": "27AAACM4821K1Z5", "extracted_value": "27AAACM4821K1Z5", "details": "State Code 27 (Maharashtra) confirmed for Pune industrial zone."},
+                    {"item": "Operating Location & District", "result": "MATCH", "profile_value": "Pune, Maharashtra", "extracted_value": "Plot E-42, MIDC Chakan Phase II, Pune", "details": "Premises jurisdiction matches MIDC Chakan regional industrial authority."},
+                    {"item": "Required Technical Annexures", "result": "MATCH", "profile_value": "Mandatory Engineering Layout", "extracted_value": "Technical Specifications & Process Flow", "details": "Required structural sections, capacity metrics, and engineering annexures detected."}
                 ],
-                "summary": f"Verified {title} against Maharashtra Fresh Foods Pvt. Ltd. profile.",
+                "entity_comparisons": [
+                    {"check_item": "Business Legal Name", "profile_value": "Maharashtra Fresh Foods Pvt. Ltd.", "extracted_value": "Maharashtra Fresh Foods Pvt. Ltd.", "status": "MATCH", "details": "Verbatim entity match across title and signatory block."},
+                    {"check_item": "PAN Identification", "profile_value": "AAACM4821K", "extracted_value": "AAACM4821K", "status": "MATCH", "details": "Valid Income Tax Department PAN format matching business profile."},
+                    {"check_item": "GSTIN Jurisdiction", "profile_value": "27AAACM4821K1Z5", "extracted_value": "27AAACM4821K1Z5", "status": "MATCH", "details": "State Code 27 (Maharashtra) matches factory premises."},
+                    {"check_item": "Operating District", "profile_value": "Pune, Maharashtra", "extracted_value": "Plot E-42, MIDC Chakan, Pune", "status": "MATCH", "details": "Jurisdiction verified under MIDC Pune industrial zone."},
+                    {"check_item": "Technical Layout", "profile_value": "Statutory Schedule", "extracted_value": "Technical Schedule & Flow Diagram", "status": "MATCH", "details": "Required engineering annexures and process notes detected."}
+                ],
+                "summary": f"Verified {title}: 5/5 statutory criteria passed against Maharashtra Fresh Foods Pvt. Ltd. profile.",
                 "recommended_action": "Document meets compliance standards for departmental processing."
             },
             extracted_metadata={"page_count": 1, "business_name_status": "VERIFIED"},
@@ -218,10 +235,10 @@ def seed_database():
         sla_deadline=now + timedelta(days=17),
         delay_risk_level="HIGH",
         delay_risk_reasons=[
-            "Departmental review stage active for 18 days (exceeds SLA benchmark of 15 days)",
-            "Inter-departmental hydraulic review memo pending from Regional Sub-division"
+            "Department review stage active for 18 days (exceeds internal departmental scrutiny benchmark of 15 days; total statutory clearance SLA is 24 days under RTSA)",
+            "Inter-departmental hydraulic review memo pending from Regional Sub-division desk"
         ],
-        next_action_prompt="Officer review pending. Awaiting final scrutiny endorsement.",
+        next_action_prompt="Officer review pending. Awaiting technical scrutiny endorsement from Regional Scrutiny Desk.",
         assigned_officer="Sanjay Patil (MPCB Regional Officer Pune)",
         updated_at=now - timedelta(days=18) # 18 days inactive in current stage
     )
@@ -251,10 +268,10 @@ def seed_database():
         sla_deadline=now + timedelta(days=18),
         delay_risk_level="MEDIUM",
         delay_risk_reasons=[
-            "2 mandatory document(s) missing: FSMS Food Safety Plan & NABL Potable Water Test Report",
+            "3 mandatory document(s) missing: FSMS Plan (Food Safety Management System) & SOPs, List of Food Processing Machinery, Installed Capacities & Horsepower, Potable Water Chemical & Bacteriological Analysis Report from NABL Lab",
             "Initial document verification waiting on applicant upload"
         ],
-        next_action_prompt="Upload missing FSMS Safety Plan and NABL Potable Water Test Report.",
+        next_action_prompt="Upload 3 missing mandatory documents: FSMS Safety Plan, Machinery Specifications, and NABL Water Test Report.",
         assigned_officer="Dr. Anjali Joshi (FDA Maharashtra)",
         updated_at=now - timedelta(days=5)
     )
@@ -535,11 +552,14 @@ def seed_database():
     db.commit()
 
     print("Seeding Inspections...")
+    tomorrow_11am = (now + timedelta(days=1)).replace(hour=11, minute=0, second=0, microsecond=0)
+    in_4_days_230pm = (now + timedelta(days=4)).replace(hour=14, minute=30, second=0, microsecond=0)
+
     insp1 = Inspection(
         application_id=fire_app.id,
         business_id=primary_business.id,
         inspection_type="Fire Safety & Hydrant System Audit",
-        scheduled_date=now + timedelta(days=1, hours=4), # Tomorrow morning
+        scheduled_date=tomorrow_11am,
         officer_name="K. Shinde",
         officer_designation="Station Fire Officer, MIDC Chakan",
         officer_contact="+91 94225 33445",
@@ -551,7 +571,7 @@ def seed_database():
         application_id=boiler_app.id,
         business_id=primary_business.id,
         inspection_type="Boiler Hydraulic Pressure Verification",
-        scheduled_date=now + timedelta(days=4, hours=2),
+        scheduled_date=in_4_days_230pm,
         officer_name="V. K. Tambe",
         officer_designation="Inspector of Steam Boilers, Maharashtra",
         officer_contact="+91 98233 77889",
@@ -626,7 +646,7 @@ def seed_database():
             user_id=applicant_user.id,
             business_id=primary_business.id,
             title="Inspection Scheduled: Fire Safety NOC",
-            message="Field inspection for your Fire NOC (MH-MIDC-2026-3829) is scheduled for tomorrow at 11:00 AM.",
+            message=f"Field inspection for your Fire NOC (MH-MIDC-2026-3829) is scheduled for {tomorrow_11am.strftime('%d %b %Y')} at 11:00 AM.",
             type="INSPECTION",
             action_link="/inspections"
         ),
@@ -634,7 +654,7 @@ def seed_database():
             user_id=applicant_user.id,
             business_id=primary_business.id,
             title="SLA Delay Risk Alert: MPCB Consent",
-            message="Application MH-MPCB-2026-1048 has exceeded the 15-day department review benchmark. Flagged for priority escalation.",
+            message="Application MH-MPCB-2026-1048 has exceeded the 15-day department review benchmark (Total statutory SLA is 24 days). Flagged for priority escalation.",
             type="SLA_BREACH",
             action_link="/applications"
         ),
@@ -642,7 +662,7 @@ def seed_database():
             user_id=applicant_user.id,
             business_id=primary_business.id,
             title="Missing Documents for FSSAI License",
-            message="FSSAI license application MH-FSSAI-2026-2491 requires FSMS Plan and NABL water test report.",
+            message="FSSAI license application MH-FSSAI-2026-2491 requires 3 missing mandatory documents: FSMS Safety Plan, Machinery Specifications, and NABL Water Test Report.",
             type="ALERT",
             action_link="/applications"
         ),
@@ -653,6 +673,40 @@ def seed_database():
             message="Your profile matches Maharashtra Package Scheme of Incentives (PSI 2019/2024) for up to 50% capital subsidy.",
             type="SUCCESS",
             action_link="/schemes"
+        ),
+        # Officer Notifications
+        Notification(
+            user_id=officer_user.id,
+            business_id=primary_business.id,
+            title="Scrutiny Queue Item: MPCB Consent to Establish",
+            message="Application MH-MPCB-2026-1048 requires technical review and hydraulic report scrutiny endorsement.",
+            type="ALERT",
+            action_link="/admin/review"
+        ),
+        Notification(
+            user_id=officer_user.id,
+            business_id=primary_business.id,
+            title="Field Inspection Assigned",
+            message=f"Fire Safety Audit for Maharashtra Fresh Foods is scheduled for {tomorrow_11am.strftime('%d %b %Y')} at 11:00 AM.",
+            type="INSPECTION",
+            action_link="/admin/inspections"
+        ),
+        # Admin Notifications
+        Notification(
+            user_id=admin_user.id,
+            business_id=primary_business.id,
+            title="SLA Risk Escalation Alert",
+            message="1 application (MH-MPCB-2026-1048) has exceeded the 15-day review benchmark. Flagged for priority escalation.",
+            type="SLA_BREACH",
+            action_link="/admin/sla-risk"
+        ),
+        Notification(
+            user_id=admin_user.id,
+            business_id=primary_business.id,
+            title="Cross-Departmental Review Desk Active",
+            message="4 active clearance applications currently undergoing scrutiny across Maharashtra regulatory bodies.",
+            type="INFO",
+            action_link="/admin/review"
         )
     ]
     db.add_all(notifs)

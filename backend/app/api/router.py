@@ -11,7 +11,9 @@ from backend.app.api.routes import (
     notifications,
     analytics,
     ai,
-    audit_logs
+    audit_logs,
+    admin,
+    officer
 )
 
 api_router = APIRouter()
@@ -28,3 +30,6 @@ api_router.include_router(notifications.router)
 api_router.include_router(analytics.router)
 api_router.include_router(ai.router)
 api_router.include_router(audit_logs.router)
+api_router.include_router(admin.router)
+api_router.include_router(officer.router)
+

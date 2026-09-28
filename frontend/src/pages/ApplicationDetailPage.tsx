@@ -1,24 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-  FileCheck2,
   ArrowLeft,
   Clock,
-  ShieldAlert,
-  CheckCircle2,
   Upload,
   FileText,
   AlertTriangle,
-  Building2,
   Sparkles,
-  Info,
-  CalendarCheck,
-  CheckCircle,
-  ExternalLink
+  CalendarCheck
 } from 'lucide-react';
 import { ApplicationService } from '../services/application.service';
 import { DocumentService } from '../services/document.service';
-import { ApplicationItem, DocumentItem, DocumentValidationResult } from '../types';
+import { ApplicationItem } from '../types';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { RiskBadge } from '../components/common/RiskBadge';
 import { Timeline } from '../components/common/Timeline';
@@ -158,47 +151,198 @@ export const ApplicationDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
-            <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase block">Current Stage</span>
-              <strong className="text-slate-800 dark:text-slate-200 font-semibold">{application.current_stage.replace(/_/g, ' ')}</strong>
+          {/* Quick Info & Last Updated Audit */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
+            <div className="flex items-center gap-4">
+              <div>
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Authority</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{application.approval_type?.issuing_authority}</span>
+              </div>
+              <div className="border-l border-slate-200 dark:border-slate-700 pl-4">
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Assigned Officer / Desk</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{application.assigned_officer || 'Department Scrutiny Cell'}</span>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase block">Statutory SLA</span>
-              <strong className="text-slate-800 dark:text-slate-200 font-mono">{application.approval_type?.standard_sla_days || 30} Days</strong>
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase block">SLA Target Date</span>
-              <strong className="text-slate-800 dark:text-slate-200 font-mono">
-                {application.sla_deadline ? new Date(application.sla_deadline).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
-              </strong>
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase block">Assigned Scrutiny Officer</span>
-              <strong className="text-slate-800 dark:text-slate-200 font-semibold">{application.assigned_officer || 'Desk Officer'}</strong>
+
+            <div className="text-right">
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Last Workflow Update</span>
+              <span className="font-mono text-slate-700 dark:text-slate-300 font-semibold">
+                {application.updated_at
+                  ? new Date(application.updated_at).toLocaleString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })
+                  : 'Recently Updated'}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Delay Risk Breakdown Panel */}
-      {application.delay_risk_level !== 'LOW' && (
-        <div className="bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/60 rounded-2xl p-5 space-y-2">
-          <div className="flex items-center gap-2 text-rose-800 dark:text-rose-300 font-bold text-sm">
-            <ShieldAlert className="w-5 h-5 text-rose-600" />
-            SLA Delay Risk Diagnosis ({application.delay_risk_level})
+      {/* 5 Distinct Dimensional Cards: STATUS, WORKFLOW STAGE, SLA, DELAY RISK, NEXT ACTION */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 1. STATUS */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col justify-between space-y-3">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">1. Regulatory Status</span>
+              <StatusBadge status={application.status} />
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+              {application.status === 'DOCUMENTS_REQUIRED' && 'Mandatory statutory clearances documents are missing and required from applicant.'}
+              {application.status === 'UNDER_REVIEW' && 'Department scrutiny officers are evaluating technical specifications and site plans.'}
+              {application.status === 'INSPECTION_PENDING' && 'Official field inspection has been assigned and scheduled.'}
+              {application.status === 'APPROVED' && 'Statutory clearance has been formally sanctioned and issued.'}
+              {application.status === 'REJECTED' && 'Clearance request was declined by the regulatory authority.'}
+              {!['DOCUMENTS_REQUIRED', 'UNDER_REVIEW', 'INSPECTION_PENDING', 'APPROVED', 'REJECTED'].includes(application.status) && 'Clearance is progressing through statutory scrutiny stages.'}
+            </p>
           </div>
-          <ul className="space-y-1 text-xs text-rose-700 dark:text-rose-300 pl-7 list-disc">
-            {application.delay_risk_reasons.map((r, i) => (
-              <li key={i}>{r}</li>
-            ))}
-          </ul>
-          <p className="text-xs text-slate-600 dark:text-slate-400 pt-1">
-            <strong>Recommended Next Action:</strong> {application.next_action_prompt}
+          <div className="text-[10px] text-slate-400 font-mono pt-2 border-t border-slate-100 dark:border-slate-800">
+            Ref: {application.application_number}
+          </div>
+        </div>
+
+        {/* 2. CURRENT WORKFLOW STAGE */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col justify-between space-y-3">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">2. Current Workflow Stage</span>
+            <div className="mt-2">
+              <strong className="text-slate-900 dark:text-white font-bold text-sm block">
+                {application.current_stage.replace(/_/g, ' ')}
+              </strong>
+              <span className="inline-block mt-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
+                Stage {application.workflow_steps?.findIndex((s) => s.status === 'IN_PROGRESS') !== -1 ? (application.workflow_steps?.findIndex((s) => s.status === 'IN_PROGRESS') ?? 0) + 1 : 1} of {application.workflow_steps?.length || 5}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              Active sequential phase under the {application.approval_type?.issuing_authority} processing charter.
+            </p>
+          </div>
+          <div className="text-[10px] text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span>Desk:</span>
+            <span className="font-semibold text-slate-600 dark:text-slate-300">{application.assigned_officer?.split('(')[0] || 'Technical Officer'}</span>
+          </div>
+        </div>
+
+        {/* 3. SLA & PROCESSING WINDOW */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col justify-between space-y-3">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">3. Statutory SLA & Benchmarks</span>
+            <div className="mt-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">Statutory SLA Window:</span>
+                <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
+                  {application.approval_type?.standard_sla_days || 30} Days (RTSA)
+                </span>
+              </div>
+              {application.approval_type?.code === 'MPCB_CTE' && (
+                <div className="p-1.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between">
+                  <span className="text-[11px] text-indigo-700 dark:text-indigo-300 font-medium">Dept Review Benchmark:</span>
+                  <span className="font-mono text-[11px] font-bold text-indigo-800 dark:text-indigo-200">15 Days</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">Target Date:</span>
+                <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
+                  {application.sla_deadline ? new Date(application.sla_deadline).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+          <p className="text-[10px] text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+            Total statutory SLA per Maharashtra Right to Services Act.
           </p>
         </div>
-      )}
+
+        {/* 4. DELAY RISK */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col justify-between space-y-3">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">4. SLA Delay Risk</span>
+              <RiskBadge level={application.delay_risk_level} />
+            </div>
+            <div className="mt-2 space-y-1">
+              {application.delay_risk_reasons && application.delay_risk_reasons.length > 0 ? (
+                <ul className="text-xs text-rose-700 dark:text-rose-300 space-y-1 pl-3 list-disc">
+                  {application.delay_risk_reasons.slice(0, 2).map((r, i) => (
+                    <li key={i} className="leading-tight">{r}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                  On Track • Review proceeding within benchmark limits.
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="text-[10px] text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span>Risk Status:</span>
+            <span className="font-bold text-slate-700 dark:text-slate-300">{application.delay_risk_level} Priority</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. NEXT ACTION (Explicit, Actionable Callout) */}
+      <div className={`rounded-2xl p-5 border shadow-xs transition-all ${
+        application.status === 'DOCUMENTS_REQUIRED'
+          ? 'bg-amber-50/80 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/60'
+          : application.delay_risk_level === 'HIGH'
+          ? 'bg-rose-50/80 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/60'
+          : 'bg-blue-50/70 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/60'
+      }`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800">
+                5. Immediate Next Action
+              </span>
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {application.status === 'DOCUMENTS_REQUIRED'
+                  ? 'Applicant Submission Required'
+                  : application.status === 'INSPECTION_PENDING'
+                  ? 'Field Readiness Required'
+                  : 'Department Processing Stage'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-800 dark:text-slate-200 font-semibold leading-relaxed">
+              {application.next_action_prompt || 'Ensure all compliance records are up to date and monitor department notifications.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0">
+            {application.status === 'DOCUMENTS_REQUIRED' && (
+              <button
+                onClick={() => {
+                  setUploadDocType(manifest[0]?.doc_type || 'GENERAL_DOC');
+                  setShowUploadModal(true);
+                }}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" /> Upload Missing Document
+              </button>
+            )}
+
+            {application.status === 'INSPECTION_PENDING' && (
+              <Link
+                to="/inspections"
+                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-sm flex items-center gap-1.5"
+              >
+                <CalendarCheck className="w-3.5 h-3.5" /> View Inspection Schedule
+              </Link>
+            )}
+
+            <Link
+              to="/ai-assistant"
+              className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all flex items-center gap-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-blue-500" /> Ask AI Guidance
+            </Link>
+          </div>
+        </div>
+      </div>
 
       {/* Two Column Section: Timeline (Left) & Document Checklist (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

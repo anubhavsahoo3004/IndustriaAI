@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from backend.app.core.database import get_db
-from backend.app.core.dependencies import get_current_user
+from backend.app.core.dependencies import get_current_user, require_admin, require_officer_or_admin
 from backend.app.models.user import User
 from backend.app.models.business import Business
 from backend.app.models.approval import ApprovalType
@@ -41,6 +41,35 @@ def get_workflow_state_matrix(
         "stage_labels": STAGE_LABELS
     }
 
+@router.get("/scrutiny-queue", response_model=List[ApplicationResponse])
+@router.get("/review-queue", response_model=List[ApplicationResponse])
+def get_scrutiny_queue(
+    status: Optional[str] = Query(None),
+    delay_risk: Optional[str] = Query(None),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Department-wide scrutiny and review queue.
+    Strictly restricted to Admin and Officers (HTTP 403 for applicants).
+    """
+    query = db.query(Application)
+    if status:
+        query = query.filter(Application.status == status)
+    if delay_risk:
+        query = query.filter(Application.delay_risk_level == delay_risk)
+    
+    apps = query.order_by(Application.created_at.desc()).all()
+    results = []
+    for a in apps:
+        item = ApplicationResponse.model_validate(a)
+        if a.business:
+            item.business_name = a.business.name
+            item.business_industry = a.business.industry
+            item.business_district = a.business.district
+        results.append(item)
+    return results
+
 @router.get("", response_model=List[ApplicationResponse])
 def list_applications(
     business_id: Optional[int] = Query(None),
@@ -52,6 +81,8 @@ def list_applications(
     query = db.query(Application)
     if current_user.role not in ["admin", "officer"]:
         user_biz_ids = [b.id for b in db.query(Business).filter(Business.user_id == current_user.id).all()]
+        if business_id is not None and business_id not in user_biz_ids:
+            raise HTTPException(status_code=403, detail="Not authorized to access applications for this business.")
         query = query.filter(Application.business_id.in_(user_biz_ids))
 
     if business_id:
@@ -152,6 +183,15 @@ def get_application_detail(
         res_dict["business_name"] = app.business.name
         res_dict["business_industry"] = app.business.industry
         res_dict["business_district"] = app.business.district
+
+    # Canonical Document Completeness Reconciler:
+    # Ensure delay_risk_reasons and next_action_prompt accurately reflect real live missing documents
+    if len(missing_mandatory) > 0 and app.status == "DOCUMENTS_REQUIRED":
+        doc_reason = f"{len(missing_mandatory)} mandatory document(s) missing: {', '.join(missing_mandatory)}"
+        current_reasons = [r for r in (res_dict.get("delay_risk_reasons") or []) if "mandatory document" not in r.lower()]
+        res_dict["delay_risk_reasons"] = [doc_reason] + current_reasons
+        short_names = [m.split('(')[0].strip() for m in missing_mandatory]
+        res_dict["next_action_prompt"] = f"Upload {len(missing_mandatory)} missing mandatory documents: {', '.join(short_names[:2])}{' and more' if len(missing_mandatory) > 2 else ''}."
 
     return ApplicationDetailResponse(
         **res_dict,

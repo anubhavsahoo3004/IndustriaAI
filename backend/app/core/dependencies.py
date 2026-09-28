@@ -38,3 +38,20 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
             detail="Administrative privileges required for this action."
         )
     return current_user
+
+def require_admin_only(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Department Administrator privileges required."
+        )
+    return current_user
+
+def require_officer_or_admin(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role not in ["admin", "officer"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrative or scrutiny officer privileges required."
+        )
+    return current_user
+

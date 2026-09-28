@@ -1,4 +1,13 @@
-const API_BASE = '/api';
+/**
+ * Dynamic API Base URL resolution:
+ * 1. If VITE_API_BASE_URL is set (e.g., https://industriaai-api.onrender.com or http://127.0.0.1:8000),
+ *    normalizes slashes and appends /api appropriately.
+ * 2. If unset (local development with `npm run dev`), defaults to '/api' which is proxied by Vite.
+ */
+const rawApiUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim()?.replace(/\/+$/, '');
+export const API_BASE = rawApiUrl
+  ? (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`)
+  : '/api';
 
 export class ApiError extends Error {
   status: number;

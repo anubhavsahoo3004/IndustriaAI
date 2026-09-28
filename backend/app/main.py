@@ -1,11 +1,21 @@
 import os
-from fastapi import FastAPI
+import logging
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from backend.app.core.config import settings
-from backend.app.core.database import engine, Base
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+from backend.app.core.config import settings, get_cors_origins, validate_production_config
+from backend.app.core.database import engine, Base, get_db
 from backend.app.api.router import api_router
 from backend.app.models import * # Ensure all models are registered with Base
+
+# Set up server-side logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logger = logging.getLogger("industriaai")
+
+# Validate production configuration if running in production mode
+validate_production_config()
 
 # Create tables if not existing
 Base.metadata.create_all(bind=engine)
@@ -18,22 +28,31 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Configure CORS (Scoped to local frontend environments)
-origins = [
-    settings.FRONTEND_URL,
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+# Configure CORS dynamically based on environment
+allowed_origins = get_cors_origins()
+logger.info(f"Configuring CORS with allowed origins: {allowed_origins}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Global unhandled exception handler to prevent leaking internals in production
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled server error on {request.method} {request.url.path}: {exc}", exc_info=True)
+    if settings.DEBUG and settings.APP_ENV != "production":
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Internal Server Error: {str(exc)}"}
+        )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal server error occurred. Please contact system support."}
+    )
 
 # Register API Router
 app.include_router(api_router, prefix="/api")
@@ -50,5 +69,18 @@ def root():
     }
 
 @app.get("/health")
-def health():
-    return {"status": "healthy", "database": "connected"}
+def health(db: Session = Depends(get_db)):
+    """
+    Fast health & readiness endpoint.
+    Verifies that the API process is alive and database connectivity is operational.
+    Does NOT invoke Gemini to keep health checks fast and cost-free.
+    """
+    try:
+        db.execute(text("SELECT 1"))
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unhealthy", "database": "disconnected"}
+        )

@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
+from backend.app.core.config import settings
 from backend.app.core.database import get_db
 from backend.app.core.dependencies import get_current_user
 from backend.app.models.user import User
@@ -117,11 +118,22 @@ def download_document(
     if current_user.role not in ["admin", "officer"] and business and business.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to download documents for this business.")
 
-    if not os.path.exists(doc.file_path):
-        raise HTTPException(status_code=404, detail="Document file not found on disk storage.")
+    file_to_serve = doc.file_path
+    if not os.path.exists(file_to_serve):
+        alt_path = os.path.join(settings.UPLOAD_DIR, doc.filename)
+        alt_basename = os.path.join(settings.UPLOAD_DIR, os.path.basename(doc.file_path))
+        if os.path.exists(alt_path):
+            file_to_serve = alt_path
+        elif os.path.exists(alt_basename):
+            file_to_serve = alt_basename
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail="Document file not found on disk storage. In cloud environments with ephemeral storage, physical files reset on restart; document metadata and validation results remain safely preserved in the database."
+            )
 
     return FileResponse(
-        path=doc.file_path,
+        path=file_to_serve,
         filename=doc.original_filename,
         media_type="application/octet-stream"
     )

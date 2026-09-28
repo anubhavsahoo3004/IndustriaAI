@@ -90,31 +90,38 @@ export const DashboardPage: React.FC = () => {
     );
   }
 
+  // Canonical Action Required filter matching backend logic
+  const isActionRequiredApp = (a: ApplicationItem) => {
+    const isTerminal = a.status === 'APPROVED' || a.status === 'COMPLETED' || a.status === 'REJECTED' || a.current_stage === 'COMPLETED';
+    if (isTerminal) return false;
+    return a.status === 'DOCUMENTS_REQUIRED' || a.status === 'ACTION_REQUIRED' || a.delay_risk_level === 'HIGH';
+  };
+
+  const actionRequiredList = applications.filter(isActionRequiredApp);
+
   // Derive Canonical Metrics from Backend Analytics source of truth
   const totalApps = analytics ? analytics.total_applications : applications.length;
   const completedApps = analytics ? analytics.completed_applications : applications.filter((a) => a.status === 'APPROVED' || a.status === 'COMPLETED').length;
   const underReviewApps = analytics ? analytics.under_review_applications : applications.filter((a) => a.status === 'UNDER_REVIEW' || a.status === 'INSPECTION_PENDING').length;
-  const actionReqApps = analytics ? analytics.action_required_applications : applications.filter((a) => a.status === 'DOCUMENTS_REQUIRED' || a.status === 'ACTION_REQUIRED').length;
-  const nearSlaApps = analytics ? (analytics.delayed_applications + analytics.near_sla_applications) : applications.filter((a) => a.delay_risk_level === 'HIGH' || a.delay_risk_level === 'MEDIUM').length;
+  const actionReqApps = analytics ? analytics.action_required_applications : actionRequiredList.length;
+  const nearSlaApps = analytics ? (analytics.delayed_applications + analytics.near_sla_applications) : applications.filter((a) => (a.delay_risk_level === 'HIGH' || a.delay_risk_level === 'MEDIUM') && !(a.status === 'APPROVED' || a.status === 'COMPLETED')).length;
 
-  // Chart data derived from Backend Source of Truth
-  const pieChartData = analytics?.status_breakdown && analytics.status_breakdown.length > 0
-    ? analytics.status_breakdown.map((item) => ({
-        name: item.status.replace(/_/g, ' '),
-        value: item.count,
-        color: item.color || STATUS_PIE_COLORS[item.status] || '#94a3b8',
-      }))
-    : (() => {
-        const counts: Record<string, number> = {};
-        applications.forEach((a) => {
-          counts[a.status] = (counts[a.status] || 0) + 1;
-        });
-        return Object.entries(counts).map(([status, count]) => ({
-          name: status.replace(/_/g, ' '),
-          value: count,
-          color: STATUS_PIE_COLORS[status] || '#94a3b8',
-        }));
-      })();
+  // Canonical Donut Chart Data: Every single application belongs to a displayed category
+  const pieChartData = (() => {
+    const counts: Record<string, number> = {};
+    applications.forEach((a) => {
+      counts[a.status] = (counts[a.status] || 0) + 1;
+    });
+
+    return Object.entries(counts).map(([status, count]) => ({
+      name: status.replace(/_/g, ' '),
+      statusKey: status,
+      value: count,
+      color: STATUS_PIE_COLORS[status] || '#94a3b8',
+    })).sort((a, b) => b.value - a.value);
+  })();
+
+  const chartTotal = pieChartData.reduce((acc, curr) => acc + curr.value, 0);
 
   const barChartData = analytics?.stage_breakdown && analytics.stage_breakdown.length > 0
     ? analytics.stage_breakdown.map((item) => ({
@@ -133,7 +140,6 @@ export const DashboardPage: React.FC = () => {
       })();
 
   const upcomingInspections = inspections.filter((i) => i.status === 'SCHEDULED');
-  const actionRequiredList = applications.filter((a) => a.status === 'DOCUMENTS_REQUIRED' || a.status === 'ACTION_REQUIRED' || a.delay_risk_level === 'HIGH');
 
   return (
     <div className="space-y-6">
@@ -207,13 +213,13 @@ export const DashboardPage: React.FC = () => {
           onClick={() => navigate('/applications')}
         />
         <StatCard
-          title="Completed"
+          title="Approved & Granted"
           value={completedApps}
-          subtitle="Sanctioned & Approved"
+          subtitle="Clearance Active (Completed)"
           icon={CheckCircle2}
           iconColor="text-emerald-600"
           bgColor="bg-emerald-50 dark:bg-emerald-950/30"
-          badge={{ text: `${Math.round((completedApps / Math.max(1, totalApps)) * 100)}% Done`, variant: 'positive' }}
+          badge={{ text: `${Math.round((completedApps / Math.max(1, totalApps)) * 100)}% Granted`, variant: 'positive' }}
           onClick={() => navigate('/applications?status=APPROVED')}
         />
         <StatCard
@@ -228,49 +234,81 @@ export const DashboardPage: React.FC = () => {
         <StatCard
           title="Action Required"
           value={actionReqApps}
-          subtitle="Applicant upload needed"
+          subtitle="Applicant response needed"
           icon={AlertTriangle}
           iconColor="text-amber-600"
           bgColor="bg-amber-50 dark:bg-amber-950/30"
-          badge={{ text: 'Needs Attention', variant: 'warning' }}
-          onClick={() => navigate('/applications?status=DOCUMENTS_REQUIRED')}
+          badge={{ text: `${actionReqApps} Need Action`, variant: 'warning' }}
+          onClick={() => navigate('/applications?filter=ACTION_REQUIRED')}
         />
         <StatCard
           title="Near / Delayed SLA"
           value={nearSlaApps}
-          subtitle="SLA risk monitored"
+          subtitle="Delayed (>100% SLA) or ≤5d"
           icon={ShieldAlert}
           iconColor="text-rose-600"
           bgColor="bg-rose-50 dark:bg-rose-950/30"
           badge={{ text: `${nearSlaApps} Monitored`, variant: 'danger' }}
-          onClick={() => navigate('/applications?delay_risk=HIGH')}
+          onClick={() => navigate('/applications?delay_risk=MONITORED')}
         />
       </div>
 
       {/* Urgent Action Banner if any actions or SLA delay */}
       {actionRequiredList.length > 0 && (
-        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/60 rounded-2xl p-5 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-amber-500 text-white rounded-xl mt-0.5">
-                <AlertTriangle className="w-5 h-5" />
+        <div className="bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 rounded-2xl p-5 shadow-sm space-y-3">
+          <div className="flex items-center justify-between border-b border-amber-200/60 dark:border-amber-900/40 pb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-amber-500 text-white rounded-lg">
+                <AlertTriangle className="w-4 h-4" />
               </div>
-              <div>
-                <h3 className="font-bold text-sm text-slate-900 dark:text-amber-200">
-                  Immediate Action Required for {actionRequiredList.length} Clearance(s)
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                  {actionRequiredList[0]?.approval_type?.name} ({actionRequiredList[0]?.application_number}):{' '}
-                  <span className="font-semibold">{actionRequiredList[0]?.next_action_prompt}</span>
-                </p>
-              </div>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-amber-200">
+                Immediate Action Required for {actionRequiredList.length} Clearance(s)
+              </h3>
             </div>
-            <Link
-              to={`/applications/${actionRequiredList[0]?.id}`}
-              className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-md shadow-amber-600/20 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
-            >
-              Resolve Action <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 rounded-full">
+              {actionRequiredList.length} Actions Pending
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            {actionRequiredList.map((app) => {
+              const isMissingDocs = app.status === 'DOCUMENTS_REQUIRED';
+              const ctaText = isMissingDocs
+                ? 'Review & Upload Documents'
+                : (app.delay_risk_level === 'HIGH' ? 'Address Scrutiny Memo' : 'Review Application');
+              return (
+                <div
+                  key={app.id}
+                  className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-amber-200/80 dark:border-amber-900/50 flex flex-col justify-between gap-3 shadow-xs"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-bold text-xs text-slate-900 dark:text-white line-clamp-1">
+                        {app.approval_type?.name}
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold whitespace-nowrap">
+                        {app.application_number}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300">
+                      <span className="font-semibold text-amber-700 dark:text-amber-400">Required Action:</span>{' '}
+                      {app.next_action_prompt || 'Action required from applicant to resume departmental scrutiny.'}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-[11px] text-slate-500 font-medium">
+                      {isMissingDocs ? 'Status: Documents Required' : `SLA Delay Risk: ${app.delay_risk_level}`}
+                    </span>
+                    <Link
+                      to={`/applications/${app.id}`}
+                      className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-xs transition-all flex items-center gap-1"
+                    >
+                      {ctaText} <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -306,17 +344,26 @@ export const DashboardPage: React.FC = () => {
                       nameKey="name"
                       cx="50%"
                       cy="50%"
-                      innerRadius={45}
-                      outerRadius={70}
+                      innerRadius={48}
+                      outerRadius={72}
                       paddingAngle={3}
                     >
                       {pieChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip formatter={(value: any) => [`${value} Clearances`, 'Count']} />
                   </PieChart>
                 </ResponsiveContainer>
+                {/* Center Donut Label */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">
+                    {chartTotal}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
+                    Clearances
+                  </span>
+                </div>
               </div>
 
               {/* Status Legend */}
@@ -327,9 +374,19 @@ export const DashboardPage: React.FC = () => {
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                       <span className="text-slate-600 dark:text-slate-300 capitalize">{item.name}</span>
                     </div>
-                    <span className="font-bold text-slate-900 dark:text-white">{item.value}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-slate-900 dark:text-white">{item.value}</span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        ({Math.round((item.value / Math.max(1, chartTotal)) * 100)}%)
+                      </span>
+                    </div>
                   </div>
                 ))}
+                {/* Total Portfolio Verification Row */}
+                <div className="flex items-center justify-between pt-1.5 mt-1 border-t-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-xs">
+                  <span>Total Applications</span>
+                  <span>{chartTotal} Clearances (100%)</span>
+                </div>
               </div>
             </div>
           </div>
@@ -432,7 +489,7 @@ export const DashboardPage: React.FC = () => {
                         </p>
                       </div>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 whitespace-nowrap">
-                        {new Date(insp.scheduled_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                        {new Date(insp.scheduled_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} • {new Date(insp.scheduled_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
 

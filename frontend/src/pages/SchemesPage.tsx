@@ -129,17 +129,17 @@ export const SchemesPage: React.FC = () => {
                     </span>
                     <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center gap-1">
                       <Sparkles className="w-3 h-3" />
-                      {item.match_score}% Profile Match
+                      Strong Profile Match (Eligibility Criteria Matched: {item.match_reasons.length}/{item.match_reasons.length})
                     </span>
                     {item.scheme.verification_status === 'VERIFIED' ? (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        Verified State Policy
+                        Audited Policy Scheme
                       </span>
                     ) : (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 flex items-center gap-1">
                         <Info className="w-3 h-3 text-slate-500" />
-                        Prototype Demo
+                        Prototype Scheme
                       </span>
                     )}
                   </div>
@@ -163,7 +163,7 @@ export const SchemesPage: React.FC = () => {
               <div className="bg-purple-50/50 dark:bg-purple-950/20 p-3.5 rounded-xl border border-purple-100 dark:border-purple-900/40 text-xs space-y-1.5">
                 <span className="font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-purple-600" />
-                  Why This Scheme Matches Your Business:
+                  Evaluated Profile Criteria:
                 </span>
                 <ul className="list-disc pl-6 text-slate-700 dark:text-slate-300 space-y-0.5">
                   {item.match_reasons.map((r, rIdx) => (
@@ -174,11 +174,16 @@ export const SchemesPage: React.FC = () => {
 
               {/* Financial Benefits & Eligibility Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-1.5">
-                  <strong className="text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <DollarSign className="w-4 h-4 text-emerald-600" />
-                    Financial Benefits & Capital Subsidies:
-                  </strong>
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <strong className="text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <DollarSign className="w-4 h-4 text-emerald-600" />
+                      Indicative Financial Benefits & Subsidies:
+                    </strong>
+                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                      Subject to Official Sanction
+                    </span>
+                  </div>
                   <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
                     {item.scheme.financial_incentive_details}
                   </p>

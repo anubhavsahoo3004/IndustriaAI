@@ -29,12 +29,13 @@ class ApprovalService:
             existing_applications=existing_applications
         )
 
-        critical_env = len([p for p in plan_items if p["category"] in ["Environmental", "Safety & Fire"]])
-        licensing = len([p for p in plan_items if p["category"] in ["Licensing & Safety", "Industrial Equipment Safety", "Labour & Safety"]])
+        env_safety = len([p for p in plan_items if p["category"] in ["Environmental", "Safety & Fire", "Labour & Safety", "Industrial Equipment Safety"]])
+        utilities_land = len([p for p in plan_items if p["category"] in ["Power & Utilities", "Land & Civil"]])
+        licensing_comm = len([p for p in plan_items if p["category"] in ["Licensing & Safety", "Packaging & Commerce", "Commercial Registration"]])
 
         ai_summary = (
             f"Statutory compliance roadmap generated for {business.name} ({business.industry}, {business.scale} Scale in {business.district}, Maharashtra). "
-            f"Identified {len(plan_items)} relevant statutory approvals including {critical_env} high-priority safety/environmental clearances. "
+            f"Identified {len(plan_items)} relevant statutory approvals ({env_safety} Environmental & Workplace Safety, {utilities_land} Utilities & Infrastructure, and {licensing_comm} Licensing & Commercial registrations). "
             f"Adherence to MPCB, DISH, and local MIDC/FDA regulations is prioritized."
         )
 
@@ -45,8 +46,11 @@ class ApprovalService:
             "location": f"{business.district}, {business.state}",
             "scale": business.scale,
             "total_recommended_approvals": len(plan_items),
-            "critical_environmental_approvals": critical_env,
-            "operational_licensing_approvals": licensing,
+            "environmental_safety_approvals": env_safety,
+            "utilities_infrastructure_approvals": utilities_land,
+            "licensing_commerce_approvals": licensing_comm,
+            "critical_environmental_approvals": env_safety,
+            "operational_licensing_approvals": licensing_comm,
             "items": plan_items,
             "ai_strategic_summary": ai_summary
         }

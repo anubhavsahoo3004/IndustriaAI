@@ -1,8 +1,9 @@
+import os
 import requests
 import json
 import sys
 
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = os.getenv("API_URL", "http://127.0.0.1:8000").rstrip("/")
 
 def run_tests():
     print("=" * 60)

@@ -1,0 +1,55 @@
+# ==============================================================================
+# IndustriaAI Infrastructure as Code (Render Blueprint)
+# ==============================================================================
+# Deploys:
+#  1. FastAPI Web Service (Backend) connecting to Supabase PostgreSQL & Gemini API
+#  2. React/Vite Static Site (Frontend) with SPA Client-Side Routing
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Backend Web Service: IndustriaAI FastAPI API
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: industriaai-api
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: DATABASE_URL
+        sync: false # Set in Render Dashboard: Supabase PostgreSQL Connection String
+      - key: SECRET_KEY
+        generateValue: true # Render automatically generates a secure 32+ character random secret
+      - key: GEMINI_API_KEY
+        sync: false # Set in Render Dashboard: Google AI Studio Gemini API Key
+      - key: CORS_ORIGINS
+        sync: false # Set in Render Dashboard to Frontend URL, e.g.: https://industriaai-app.onrender.com
+      - key: FRONTEND_URL
+        sync: false # Set in Render Dashboard to Frontend URL
+      - key: DEMO_MODE
+        value: "true"
+      - key: MAHARASHTRA_FOCUS
+        value: "true"
+
+  # ----------------------------------------------------------------------------
+  # 2. Frontend Static Site: IndustriaAI React/Vite App
+  # ----------------------------------------------------------------------------
+  - type: static
+    name: industriaai-app
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false # Set to Render API URL, e.g.: https://industriaai-api.onrender.com

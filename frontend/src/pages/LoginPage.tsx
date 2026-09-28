@@ -17,7 +17,11 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/dashboard');
+      if (email.toLowerCase().includes('admin') || email.toLowerCase().includes('officer')) {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check credentials.');
     } finally {
@@ -30,7 +34,7 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       await login(demoEmail, 'password123');
-      if (demoEmail === 'admin@industria.ai') {
+      if (demoEmail === 'admin@industria.ai' || demoEmail === 'officer@industria.ai') {
         navigate('/admin/dashboard');
       } else {
         navigate('/dashboard');
@@ -41,6 +45,7 @@ export const LoginPage: React.FC = () => {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-blue-600 selection:text-white">

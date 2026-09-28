@@ -13,6 +13,33 @@ from backend.app.services.business_service import BusinessService
 
 router = APIRouter(prefix="/inspections", tags=["Inspections"])
 
+@router.get("/dispatch-queue", response_model=List[InspectionResponse])
+def get_inspection_dispatch_queue(
+    status: Optional[str] = Query(None),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Department-wide inspection dispatch queue.
+    Strictly restricted to Admin and Officers (HTTP 403 for applicants).
+    """
+    query = db.query(Inspection)
+    if status:
+        query = query.filter(Inspection.status == status)
+    
+    inspections = query.order_by(Inspection.scheduled_date.asc()).all()
+    results = []
+    for insp in inspections:
+        res = InspectionResponse.model_validate(insp)
+        if insp.application:
+            res.application_number = insp.application.application_number
+            if insp.application.approval_type:
+                res.approval_name = insp.application.approval_type.name
+        if insp.business:
+            res.business_name = insp.business.name
+        results.append(res)
+    return results
+
 @router.get("", response_model=List[InspectionResponse])
 def list_inspections(
     business_id: Optional[int] = Query(None),
@@ -24,6 +51,8 @@ def list_inspections(
     query = db.query(Inspection)
     if current_user.role not in ["admin", "officer"]:
         user_biz_ids = [b.id for b in db.query(Business).filter(Business.user_id == current_user.id).all()]
+        if business_id is not None and business_id not in user_biz_ids:
+            raise HTTPException(status_code=403, detail="Not authorized to access inspections for this business.")
         query = query.filter(Inspection.business_id.in_(user_biz_ids))
 
     if business_id:
@@ -45,6 +74,7 @@ def list_inspections(
             res.business_name = insp.business.name
         results.append(res)
     return results
+
 
 @router.post("", response_model=InspectionResponse)
 def schedule_inspection(

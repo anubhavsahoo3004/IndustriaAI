@@ -45,6 +45,43 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
+const RoleRoute: React.FC<{ allowedRoles: string[]; children: React.ReactNode }> = ({
+  allowedRoles,
+  children,
+}) => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-xs text-slate-400 font-medium">Validating permissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!allowedRoles.includes(user.role)) {
+    // Strict Role-Based UI Isolation: redirect unauthorized user to applicant dashboard
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+const RoleIndexRedirect: React.FC = () => {
+  const { user } = useAuth();
+  if (user?.role === 'admin' || user?.role === 'officer') {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+  return <Navigate to="/dashboard" replace />;
+};
+
 export const App: React.FC = () => {
   return (
     <Router>
@@ -62,7 +99,7 @@ export const App: React.FC = () => {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route index element={<RoleIndexRedirect />} />
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="business/profile" element={<BusinessProfilePage />} />
               <Route path="approvals" element={<ApprovalPlanPage />} />
@@ -74,13 +111,72 @@ export const App: React.FC = () => {
               <Route path="schemes" element={<SchemesPage />} />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="ai-assistant" element={<AiAssistantPage />} />
-              <Route path="audit-logs" element={<AuditLogsPage />} />
 
-              {/* Department Admin Routes */}
-              <Route path="admin/dashboard" element={<AdminDashboardPage />} />
-              <Route path="admin/applications" element={<AdminApplicationsPage />} />
-              <Route path="admin/sla-risk" element={<AdminSlaRiskPage />} />
-              <Route path="admin/inspections" element={<AdminInspectionsPage />} />
+              {/* Officer & Admin Protected Routes - Blocked for Applicants */}
+              <Route
+                path="audit-logs"
+                element={
+                  <RoleRoute allowedRoles={['admin', 'officer']}>
+                    <AuditLogsPage />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="admin/dashboard"
+                element={
+                  <RoleRoute allowedRoles={['admin', 'officer']}>
+                    <AdminDashboardPage />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="admin/analytics"
+                element={
+                  <RoleRoute allowedRoles={['admin', 'officer']}>
+                    <AdminDashboardPage />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="admin/applications"
+                element={
+                  <RoleRoute allowedRoles={['admin', 'officer']}>
+                    <AdminApplicationsPage />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="admin/review"
+                element={
+                  <RoleRoute allowedRoles={['admin', 'officer']}>
+                    <AdminApplicationsPage />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="admin/sla-risk"
+                element={
+                  <RoleRoute allowedRoles={['admin', 'officer']}>
+                    <AdminSlaRiskPage />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="admin/sla"
+                element={
+                  <RoleRoute allowedRoles={['admin', 'officer']}>
+                    <AdminSlaRiskPage />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="admin/inspections"
+                element={
+                  <RoleRoute allowedRoles={['admin', 'officer']}>
+                    <AdminInspectionsPage />
+                  </RoleRoute>
+                }
+              />
             </Route>
 
             {/* Fallback */}
@@ -93,3 +189,4 @@ export const App: React.FC = () => {
 };
 
 export default App;
+

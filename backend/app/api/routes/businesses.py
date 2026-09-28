@@ -51,7 +51,11 @@ def get_business(
     total = len(apps)
     completed = len([a for a in apps if a.status in ["APPROVED", "COMPLETED"]])
     under_review = len([a for a in apps if a.status in ["UNDER_REVIEW", "INSPECTION_PENDING"]])
-    action_req = len([a for a in apps if a.status in ["DOCUMENTS_REQUIRED", "ACTION_REQUIRED"]])
+    action_req = len([
+        a for a in apps
+        if not (a.status in ["APPROVED", "COMPLETED", "REJECTED"] or a.current_stage == "COMPLETED")
+        and (a.status in ["DOCUMENTS_REQUIRED", "ACTION_REQUIRED"] or a.delay_risk_level == "HIGH")
+    ])
 
     data = BusinessResponse.model_validate(business).model_dump()
     return {

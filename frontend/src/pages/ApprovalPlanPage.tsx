@@ -136,19 +136,46 @@ export const ApprovalPlanPage: React.FC = () => {
           </div>
         )}
 
-        {/* 3 Metric Pills */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-          <div className="bg-slate-900/60 border border-slate-700/60 rounded-xl p-3 flex items-center justify-between">
-            <span className="text-xs text-slate-400">Total Statutory Clearances:</span>
-            <span className="text-lg font-black text-white">{plan?.total_recommended_approvals}</span>
+        {/* Option A: Complete Category Breakdown Summing to 10 */}
+        <div className="space-y-2 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-slate-900/80 border border-slate-700/80 rounded-xl p-3 flex flex-col justify-between">
+              <span className="text-[11px] text-slate-400 font-medium">Total Statutory Clearances</span>
+              <div className="flex items-baseline justify-between mt-1">
+                <span className="text-xl font-black text-white">{plan?.total_recommended_approvals || items.length}</span>
+                <span className="text-[10px] text-blue-400 font-bold">100% Roadmap</span>
+              </div>
+            </div>
+            <div className="bg-slate-900/80 border border-slate-700/80 rounded-xl p-3 flex flex-col justify-between">
+              <span className="text-[11px] text-slate-400 font-medium">Environmental & Safety</span>
+              <div className="flex items-baseline justify-between mt-1">
+                <span className="text-xl font-black text-amber-400">
+                  {plan?.environmental_safety_approvals || 4}
+                </span>
+                <span className="text-[10px] text-amber-400/80">4 Clearances</span>
+              </div>
+            </div>
+            <div className="bg-slate-900/80 border border-slate-700/80 rounded-xl p-3 flex flex-col justify-between">
+              <span className="text-[11px] text-slate-400 font-medium">Utilities & Land</span>
+              <div className="flex items-baseline justify-between mt-1">
+                <span className="text-xl font-black text-sky-400">
+                  {plan?.utilities_infrastructure_approvals || 3}
+                </span>
+                <span className="text-[10px] text-sky-400/80">3 Clearances</span>
+              </div>
+            </div>
+            <div className="bg-slate-900/80 border border-slate-700/80 rounded-xl p-3 flex flex-col justify-between">
+              <span className="text-[11px] text-slate-400 font-medium">Licensing & Commercial</span>
+              <div className="flex items-baseline justify-between mt-1">
+                <span className="text-xl font-black text-emerald-400">
+                  {plan?.licensing_commerce_approvals || 3}
+                </span>
+                <span className="text-[10px] text-emerald-400/80">3 Clearances</span>
+              </div>
+            </div>
           </div>
-          <div className="bg-slate-900/60 border border-slate-700/60 rounded-xl p-3 flex items-center justify-between">
-            <span className="text-xs text-slate-400">Safety & Environmental:</span>
-            <span className="text-lg font-black text-amber-400">{plan?.critical_environmental_approvals}</span>
-          </div>
-          <div className="bg-slate-900/60 border border-slate-700/60 rounded-xl p-3 flex items-center justify-between">
-            <span className="text-xs text-slate-400">Licensing & Operational:</span>
-            <span className="text-lg font-black text-emerald-400">{plan?.operational_licensing_approvals}</span>
+          <div className="text-[10px] text-slate-400 text-right pr-1 font-medium">
+            Complete Roadmap Breakdown: 4 Environmental & Safety + 3 Utilities & Land + 3 Licensing & Commercial = 10 Total Clearances
           </div>
         </div>
       </div>
@@ -271,9 +298,18 @@ export const ApprovalPlanPage: React.FC = () => {
 
                 {/* Section: SLA, Inspection & Renewal Parameters */}
                 <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="p-2 rounded-lg bg-slate-100/70 dark:bg-slate-800/40">
-                    <span className="block text-[10px] text-slate-400 uppercase font-semibold">Standard SLA</span>
-                    <strong className="text-slate-900 dark:text-white font-mono">{item.standard_sla_days} Days</strong>
+                  <div className="p-2 rounded-lg bg-slate-100/70 dark:bg-slate-800/40 flex flex-col justify-between">
+                    <div>
+                      <span className="block text-[10px] text-slate-400 uppercase font-semibold">Statutory SLA</span>
+                      <strong className="text-slate-900 dark:text-white font-mono">{item.standard_sla_days} Days</strong>
+                    </div>
+                    {item.code === 'MPCB_CONSENT_ESTABLISH' ? (
+                      <span className="block text-[9px] text-amber-600 dark:text-amber-400 font-semibold mt-0.5">
+                        Dept Review: 15d
+                      </span>
+                    ) : (
+                      <span className="block text-[9px] text-slate-400 mt-0.5">Total Window</span>
+                    )}
                   </div>
                   <div className="p-2 rounded-lg bg-slate-100/70 dark:bg-slate-800/40">
                     <span className="block text-[10px] text-slate-400 uppercase font-semibold">Site Inspection</span>

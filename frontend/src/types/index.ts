@@ -112,6 +112,9 @@ export interface ApprovalPlanResponse {
   total_recommended_approvals: number;
   critical_environmental_approvals: number;
   operational_licensing_approvals: number;
+  environmental_safety_approvals?: number;
+  utilities_infrastructure_approvals?: number;
+  licensing_commerce_approvals?: number;
   items: ApprovalPlanItem[];
   ai_strategic_summary?: string;
 }
@@ -145,6 +148,11 @@ export interface DocumentValidationResult {
   inconsistency_notes?: string;
   extracted_data?: Record<string, any>;
   cited_regulatory_note?: string;
+  checks_summary?: string;
+  passed_checks?: number;
+  total_checks?: number;
+  failed_checks?: number;
+  entity_comparisons?: any[];
 }
 
 export interface DocumentItem {
@@ -237,6 +245,8 @@ export interface ComplianceTaskItem {
   penalty_risk_desc?: string;
   action_instructions?: string;
   legal_act_reference?: string;
+  source_reference?: string;
+  portal_link?: string;
   verification_status?: 'VERIFIED' | 'NEEDS_VERIFICATION' | 'DEMO_ONLY';
   source_url?: string;
   last_verified_date?: string;

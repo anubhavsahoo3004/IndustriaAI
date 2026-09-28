@@ -1,0 +1,2 @@
+# Root requirements file referencing backend dependencies for cloud deployment
+-r backend/requirements.txt

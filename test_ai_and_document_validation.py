@@ -3,7 +3,7 @@ import requests
 import json
 import tempfile
 
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = os.getenv("API_URL", "http://127.0.0.1:8000").rstrip("/")
 
 def test_ai_and_documents():
     print("=" * 70)
